@@ -4,7 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from '../store';
 import { ToolCallViewer } from './ToolCallViewer';
-import { parseAnsi } from '../utils/ansiParser';
+import { stripAnsi } from '../utils/ansiParser';
 import type { Message } from '../types';
 
 export const ChatPanel: React.FC = () => {
@@ -36,10 +36,8 @@ export const ChatPanel: React.FC = () => {
         // Debounced flush: accumulate output then create a message
         clearTimeout((bufferRef as any)._timer);
         (bufferRef as any)._timer = setTimeout(() => {
-          const text = parseAnsi(bufferRef.current)
-            .segments.map((s: { text: string }) => s.text)
-            .join('');
-          if (text.trim()) {
+          const text = stripAnsi(bufferRef.current).trim();
+          if (text && text.length > 0) {
             addMessage({
               id: `msg-${Date.now()}`,
               role: 'assistant',
@@ -48,7 +46,7 @@ export const ChatPanel: React.FC = () => {
             });
           }
           bufferRef.current = '';
-        }, 300);
+        }, 500);
       });
 
       cleanupExit = window.electronAPI.pty.onExit(({ id: ptyIdIn }) => {
