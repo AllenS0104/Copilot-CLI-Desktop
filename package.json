@@ -46,7 +46,21 @@
     "appId": "com.github.copilot-desktop",
     "productName": "Copilot Desktop",
     "files": [
-      "dist/**/*"
-    ]
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "CopilotDesktop-Portable.exe"
+    }
   }
 }

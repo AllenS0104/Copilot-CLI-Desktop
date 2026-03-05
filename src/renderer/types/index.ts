@@ -42,6 +42,15 @@ export interface Settings {
 }
 
 export interface ElectronAPI {
+  copilot: {
+    prompt: (args: { prompt: string; cwd: string; model?: string }) => Promise<string>;
+    cancel: (args: { id: string }) => Promise<void>;
+    checkAuth: () => Promise<{ authenticated: boolean; message: string }>;
+    getModels: () => Promise<string[]>;
+    onStdout: (callback: (data: { id: string; data: string }) => void) => () => void;
+    onDone: (callback: (data: { id: string; exitCode: number }) => void) => () => void;
+    onError: (callback: (data: { id: string; exitCode: number; message: string }) => void) => () => void;
+  };
   pty: {
     create: (args: { cols: number; rows: number; cwd?: string }) => Promise<string>;
     write: (args: { id: string; data: string }) => Promise<void>;
@@ -57,6 +66,7 @@ export interface ElectronAPI {
   app: {
     getCwd: () => Promise<string>;
     getHomedir: () => Promise<string>;
+    selectFolder: () => Promise<string | null>;
   };
 }
 

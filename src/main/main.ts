@@ -1,10 +1,15 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as pty from 'node-pty';
+import { spawn, ChildProcess } from 'child_process';
 
 let mainWindow: BrowserWindow | null = null;
 const ptyProcesses = new Map<string, pty.IPty>();
+const promptProcesses = new Map<string, ChildProcess>();
+
+const copilotCmd = process.platform === 'win32' ? 'copilot.cmd' : 'copilot';
+const defaultHome = process.env.HOME || process.env.USERPROFILE || '.';
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -35,6 +40,8 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   ptyProcesses.forEach((p) => p.kill());
   ptyProcesses.clear();
+  promptProcesses.forEach((p) => p.kill());
+  promptProcesses.clear();
   if (process.platform !== 'darwin') app.quit();
 });
 
@@ -42,15 +49,131 @@ app.on('activate', () => {
   if (mainWindow === null) createWindow();
 });
 
-// PTY handlers
+// ── Mode 1: Prompt API (chat) ──
+
+ipcMain.handle(
+  'copilot:prompt',
+  (_event, args: { prompt: string; cwd: string; model?: string }) => {
+    const id = `prompt-${Date.now()}`;
+    const spawnArgs = ['-sp', args.prompt, '--cwd', args.cwd];
+    if (args.model) {
+      spawnArgs.push('--model', args.model);
+    }
+
+    const child = spawn(copilotCmd, spawnArgs, {
+      cwd: args.cwd,
+      env: process.env as Record<string, string>,
+      shell: process.platform === 'win32',
+    });
+
+    promptProcesses.set(id, child);
+
+    let buffer = '';
+    child.stdout?.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        mainWindow?.webContents.send('copilot:stdout', { id, data: line + '\n' });
+      }
+    });
+
+    child.stderr?.on('data', (chunk: Buffer) => {
+      mainWindow?.webContents.send('copilot:stdout', { id, data: chunk.toString() });
+    });
+
+    child.on('close', (code) => {
+      if (buffer) {
+        mainWindow?.webContents.send('copilot:stdout', { id, data: buffer });
+      }
+      promptProcesses.delete(id);
+      if (code === 0) {
+        mainWindow?.webContents.send('copilot:done', { id, exitCode: code });
+      } else {
+        mainWindow?.webContents.send('copilot:error', {
+          id,
+          exitCode: code,
+          message: `Process exited with code ${code}`,
+        });
+      }
+    });
+
+    child.on('error', (err) => {
+      promptProcesses.delete(id);
+      mainWindow?.webContents.send('copilot:error', {
+        id,
+        exitCode: -1,
+        message: err.message,
+      });
+    });
+
+    return id;
+  },
+);
+
+ipcMain.handle('copilot:cancel', (_event, args: { id: string }) => {
+  const child = promptProcesses.get(args.id);
+  if (child) {
+    child.kill();
+    promptProcesses.delete(args.id);
+  }
+});
+
+// ── Auth Check ──
+
+ipcMain.handle('copilot:checkAuth', async () => {
+  return new Promise<{ authenticated: boolean; message: string }>((resolve) => {
+    let output = '';
+    const child = spawn(copilotCmd, ['-sp', 'hello'], {
+      env: process.env as Record<string, string>,
+      shell: process.platform === 'win32',
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+    });
+
+    child.on('close', (code) => {
+      const lower = output.toLowerCase();
+      if (code === 0 && !lower.includes('login') && !lower.includes('error')) {
+        resolve({ authenticated: true, message: 'Authenticated' });
+      } else {
+        resolve({
+          authenticated: false,
+          message: output.trim() || `Exit code ${code}`,
+        });
+      }
+    });
+
+    child.on('error', (err) => {
+      resolve({ authenticated: false, message: err.message });
+    });
+  });
+});
+
+// ── Models ──
+
+ipcMain.handle('copilot:getModels', () => {
+  return [
+    'claude-sonnet-4-20250514',
+    'claude-sonnet-4',
+    'gpt-4.1',
+    'gpt-5-mini',
+  ];
+});
+
+// ── Mode 2: Interactive PTY (login / trust prompts) ──
+
 ipcMain.handle('pty:create', (_event, args: { cols: number; rows: number; cwd?: string }) => {
   const id = `pty-${Date.now()}`;
-  const shell = process.platform === 'win32' ? 'copilot.cmd' : 'copilot';
-  const ptyProcess = pty.spawn(shell, [], {
+  const ptyProcess = pty.spawn(copilotCmd, [], {
     name: 'xterm-color',
     cols: args.cols || 80,
     rows: args.rows || 24,
-    cwd: args.cwd || process.env.HOME || process.env.USERPROFILE || '.',
+    cwd: args.cwd || defaultHome,
     env: process.env as Record<string, string>,
   });
 
@@ -85,7 +208,8 @@ ipcMain.handle('pty:kill', (_event, args: { id: string }) => {
   }
 });
 
-// FS handlers
+// ── FS handlers ──
+
 ipcMain.handle('fs:readdir', async (_event, dirPath: string) => {
   try {
     const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
@@ -107,10 +231,21 @@ ipcMain.handle('fs:readfile', async (_event, filePath: string) => {
   }
 });
 
+// ── App handlers ──
+
 ipcMain.handle('app:getCwd', () => {
   return process.cwd();
 });
 
 ipcMain.handle('app:getHomedir', () => {
-  return process.env.HOME || process.env.USERPROFILE || '.';
+  return defaultHome;
+});
+
+ipcMain.handle('app:selectFolder', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
 });

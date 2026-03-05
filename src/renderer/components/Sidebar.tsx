@@ -4,7 +4,6 @@ import { useStore } from '../store';
 const tabs = [
   { id: 'chat' as const, icon: '💬', label: 'Chat' },
   { id: 'files' as const, icon: '📁', label: 'Files' },
-  { id: 'sessions' as const, icon: '📋', label: 'Sessions' },
   { id: 'settings' as const, icon: '⚙️', label: 'Settings' },
 ];
 
@@ -19,7 +18,7 @@ export const Sidebar: React.FC = () => {
           key={tab.id}
           className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
             activeSidebarTab === tab.id
-              ? 'bg-gray-600 text-white'
+              ? 'bg-blue-600 text-white'
               : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
           }`}
           onClick={() => setActiveSidebarTab(tab.id === activeSidebarTab ? 'chat' : tab.id)}

@@ -1,41 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
-
-const AVAILABLE_MODELS = [
-  'claude-sonnet-4-20250514',
-  'claude-opus-4-20250514',
-  'gpt-4o',
-  'gpt-4o-mini',
-  'o3-mini',
-  'gemini-2.0-flash',
-];
 
 export const ModelSelector: React.FC = () => {
   const currentModel = useStore((s) => s.currentModel);
   const setCurrentModel = useStore((s) => s.setCurrentModel);
-  const ptyId = useStore((s) => s.ptyId);
-
-  const handleChange = (model: string) => {
-    setCurrentModel(model);
-    if (ptyId && window.electronAPI) {
-      window.electronAPI.pty.write({ id: ptyId, data: `/model ${model}\n` });
-    }
-  };
+  const availableModels = useStore((s) => s.availableModels);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex items-center gap-2">
-      <label className="text-sm text-gray-400">Model:</label>
-      <select
-        value={currentModel}
-        onChange={(e) => handleChange(e.target.value)}
-        className="bg-gray-700 text-gray-100 text-sm rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-gray-100 text-sm rounded-lg px-3 py-2 transition-colors"
       >
-        {AVAILABLE_MODELS.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </select>
+        <span className="truncate">{currentModel}</span>
+        <span className="text-gray-400 ml-2">{isOpen ? '▲' : '▼'}</span>
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+          {availableModels.map((m) => (
+            <button
+              key={m}
+              onClick={() => { setCurrentModel(m); setIsOpen(false); }}
+              className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-600 transition-colors ${
+                m === currentModel ? 'text-blue-400 bg-gray-600/50' : 'text-gray-300'
+              }`}
+            >
+              {m === currentModel && '✓ '}{m}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
