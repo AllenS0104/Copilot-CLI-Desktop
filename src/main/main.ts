@@ -55,7 +55,7 @@ ipcMain.handle(
   'copilot:prompt',
   (_event, args: { prompt: string; cwd: string; model?: string }) => {
     const id = `prompt-${Date.now()}`;
-    const spawnArgs = ['-sp', args.prompt, '--cwd', args.cwd];
+    const spawnArgs = ['-sp', args.prompt];
     if (args.model) {
       spawnArgs.push('--model', args.model);
     }
