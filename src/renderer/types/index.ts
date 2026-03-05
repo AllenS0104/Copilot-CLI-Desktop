@@ -47,12 +47,16 @@ export interface ElectronAPI {
     write: (args: { id: string; data: string }) => Promise<void>;
     resize: (args: { id: string; cols: number; rows: number }) => Promise<void>;
     kill: (args: { id: string }) => Promise<void>;
-    onData: (callback: (data: { id: string; data: string }) => void) => void;
-    onExit: (callback: (data: { id: string; exitCode: number }) => void) => void;
+    onData: (callback: (data: { id: string; data: string }) => void) => () => void;
+    onExit: (callback: (data: { id: string; exitCode: number }) => void) => () => void;
   };
   fs: {
     readdir: (dirPath: string) => Promise<FileNode[]>;
     readfile: (filePath: string) => Promise<string | null>;
+  };
+  app: {
+    getCwd: () => Promise<string>;
+    getHomedir: () => Promise<string>;
   };
 }
 

@@ -45,8 +45,8 @@ app.on('activate', () => {
 // PTY handlers
 ipcMain.handle('pty:create', (_event, args: { cols: number; rows: number; cwd?: string }) => {
   const id = `pty-${Date.now()}`;
-  const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
-  const ptyProcess = pty.spawn(shell, ['--command', 'copilot'], {
+  const shell = process.platform === 'win32' ? 'copilot.cmd' : 'copilot';
+  const ptyProcess = pty.spawn(shell, [], {
     name: 'xterm-color',
     cols: args.cols || 80,
     rows: args.rows || 24,
@@ -105,4 +105,12 @@ ipcMain.handle('fs:readfile', async (_event, filePath: string) => {
   } catch {
     return null;
   }
+});
+
+ipcMain.handle('app:getCwd', () => {
+  return process.cwd();
+});
+
+ipcMain.handle('app:getHomedir', () => {
+  return process.env.HOME || process.env.USERPROFILE || '.';
 });

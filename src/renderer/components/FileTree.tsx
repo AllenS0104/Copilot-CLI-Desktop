@@ -61,7 +61,7 @@ export const FileTree: React.FC = () => {
   useEffect(() => {
     const loadRoot = async () => {
       if (!window.electronAPI) return;
-      const cwd = process.env.HOME || process.env.USERPROFILE || '.';
+      const cwd = await window.electronAPI.app.getCwd();
       const entries = await window.electronAPI.fs.readdir(cwd);
       setFiles(entries);
     };

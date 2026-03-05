@@ -4,14 +4,67 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from '../store';
 import { ToolCallViewer } from './ToolCallViewer';
+import { parseAnsi } from '../utils/ansiParser';
 import type { Message } from '../types';
 
 export const ChatPanel: React.FC = () => {
   const messages = useStore((s) => s.messages);
   const addMessage = useStore((s) => s.addMessage);
   const ptyId = useStore((s) => s.ptyId);
+  const setPtyId = useStore((s) => s.setPtyId);
+  const setConnectionStatus = useStore((s) => s.setConnectionStatus);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const bufferRef = useRef('');
+
+  // Initialize PTY on mount
+  useEffect(() => {
+    if (!window.electronAPI) return;
+
+    let cleanupData: (() => void) | undefined;
+    let cleanupExit: (() => void) | undefined;
+
+    const init = async () => {
+      setConnectionStatus('connecting');
+      const id = await window.electronAPI.pty.create({ cols: 120, rows: 40 });
+      setPtyId(id);
+      setConnectionStatus('connected');
+
+      cleanupData = window.electronAPI.pty.onData(({ id: ptyIdIn, data }) => {
+        if (ptyIdIn !== id) return;
+        bufferRef.current += data;
+        // Debounced flush: accumulate output then create a message
+        clearTimeout((bufferRef as any)._timer);
+        (bufferRef as any)._timer = setTimeout(() => {
+          const text = parseAnsi(bufferRef.current)
+            .segments.map((s: { text: string }) => s.text)
+            .join('');
+          if (text.trim()) {
+            addMessage({
+              id: `msg-${Date.now()}`,
+              role: 'assistant',
+              content: text,
+              timestamp: Date.now(),
+            });
+          }
+          bufferRef.current = '';
+        }, 300);
+      });
+
+      cleanupExit = window.electronAPI.pty.onExit(({ id: ptyIdIn }) => {
+        if (ptyIdIn !== id) return;
+        setConnectionStatus('disconnected');
+        setPtyId(null);
+      });
+    };
+
+    init();
+
+    return () => {
+      cleanupData?.();
+      cleanupExit?.();
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

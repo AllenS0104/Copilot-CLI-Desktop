@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../store';
 
 export const StatusBar: React.FC = () => {
   const connectionStatus = useStore((s) => s.connectionStatus);
   const currentModel = useStore((s) => s.currentModel);
   const currentSession = useStore((s) => s.currentSession);
+  const [cwd, setCwd] = useState('~');
+
+  useEffect(() => {
+    window.electronAPI?.app.getCwd().then((dir: string) => setCwd(dir));
+  }, []);
 
   const statusColor =
     connectionStatus === 'connected'
@@ -24,7 +29,7 @@ export const StatusBar: React.FC = () => {
       </div>
       <div className="flex items-center gap-3">
         <span>Session: {currentSession || 'default'}</span>
-        <span>CWD: {process.cwd?.() || '~'}</span>
+        <span>CWD: {cwd}</span>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { html as diff2htmlHtml } from 'diff2html';
 import { useStore } from '../store';
 
 export const CodePreview: React.FC = () => {
