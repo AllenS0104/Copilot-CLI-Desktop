@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getCwd: () => ipcRenderer.invoke('app:getCwd'),
     getHomedir: () => ipcRenderer.invoke('app:getHomedir'),
     selectFolder: () => ipcRenderer.invoke('app:selectFolder'),
+    relaunch: () => ipcRenderer.invoke('app:relaunch'),
   },
   menu: {
     onOpenProject: (cb: () => void) => {

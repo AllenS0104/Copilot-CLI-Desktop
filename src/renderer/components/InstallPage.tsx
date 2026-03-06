@@ -7,7 +7,7 @@ export const InstallPage: React.FC = () => {
   const cliPlatform = useStore((s) => s.cliPlatform);
   const setCliStatus = useStore((s) => s.setCliStatus);
   const setCurrentView = useStore((s) => s.setCurrentView);
-  const [status, setStatus] = useState<'prompt' | 'installing' | 'success' | 'error'>('prompt');
+  const [status, setStatus] = useState<'prompt' | 'installing' | 'success' | 'restart' | 'error'>('prompt');
   const [progress, setProgress] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -33,11 +33,15 @@ export const InstallPage: React.FC = () => {
       const result = await window.electronAPI.copilot.install();
       cleanup();
       if (result.success) {
-        setStatus('success');
-        setTimeout(() => {
-          setCliStatus('installed');
-          setCurrentView('auth_choice');
-        }, 1500);
+        if (result.needsRestart) {
+          setStatus('restart');
+        } else {
+          setStatus('success');
+          setTimeout(() => {
+            setCliStatus('installed');
+            setCurrentView('auth_choice');
+          }, 1500);
+        }
       } else {
         setStatus('error');
         setErrorMsg(result.message);
@@ -132,6 +136,32 @@ export const InstallPage: React.FC = () => {
               </svg>
             </div>
             <p className="text-sm text-emerald-400">{t('install.success', locale)}</p>
+          </div>
+        )}
+
+        {status === 'restart' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-emerald-400">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p className="text-sm text-emerald-400">{t('install.success', locale)}</p>
+            </div>
+            <div className="bg-amber-900/30 border border-amber-700/50 rounded-xl p-4 text-sm text-amber-300 text-center">
+              <p>{t('install.restart_hint', locale)}</p>
+            </div>
+            <button
+              onClick={() => window.electronAPI?.app.relaunch()}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <path d="M1 4v6h6M23 20v-6h-6" />
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
+              </svg>
+              {t('install.restart_app', locale)}
+            </button>
           </div>
         )}
 

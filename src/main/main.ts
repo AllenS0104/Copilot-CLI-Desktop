@@ -169,7 +169,7 @@ ipcMain.handle('copilot:checkInstall', async () => {
 
 ipcMain.handle('copilot:install', async () => {
   const platform = process.platform;
-  return new Promise<{ success: boolean; message: string }>((resolve) => {
+  return new Promise<{ success: boolean; message: string; needsRestart: boolean }>((resolve) => {
     let cmd: string;
     let args: string[];
 
@@ -202,14 +202,16 @@ ipcMain.handle('copilot:install', async () => {
 
     child.on('close', (code) => {
       if (code === 0) {
-        resolve({ success: true, message: 'Installation complete' });
+        // After fresh install, PATH may not be updated in current process
+        // Signal that app restart is needed
+        resolve({ success: true, message: 'Installation complete', needsRestart: true });
       } else {
-        resolve({ success: false, message: output.trim() || `Exit code ${code}` });
+        resolve({ success: false, message: output.trim() || `Exit code ${code}`, needsRestart: false });
       }
     });
 
     child.on('error', (err) => {
-      resolve({ success: false, message: err.message });
+      resolve({ success: false, message: err.message, needsRestart: false });
     });
   });
 });
@@ -393,4 +395,9 @@ ipcMain.handle('app:selectFolder', async () => {
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
+});
+
+ipcMain.handle('app:relaunch', () => {
+  app.relaunch();
+  app.exit(0);
 });
