@@ -282,6 +282,18 @@ export const ChatPanel: React.FC = () => {
             >
               {t('chat.files_btn', locale)}
             </button>
+            <button
+              onClick={() => {
+                const projectName = cwd ? cwd.split(/[\\/]/).pop() : '';
+                const activeFile = useStore.getState().activeFilePath || '';
+                const context = [projectName, activeFile].filter(Boolean).join(' ');
+                if (context) setChatInput(chatInput + '@' + context + ' ');
+                textareaRef.current?.focus();
+              }}
+              className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
+            >
+              {t('chat.context_btn', locale)}
+            </button>
             <div className="relative">
               <button
                 onClick={() => setShowCommands(!showCommands)}

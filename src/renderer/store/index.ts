@@ -14,11 +14,14 @@ interface AppState {
   openFiles: OpenFile[];
   activeFilePath: string | null;
   rightSidebarOpen: boolean;
-  activeSidebarTab: 'chat' | 'files' | 'settings';
+  activeSidebarTab: 'chat' | 'files' | 'settings' | 'history';
   settings: Settings;
   sidebarExpanded: boolean;
   chatInput: string;
   locale: Locale;
+  projects: { name: string; path: string }[];
+  currentProject: string | null;
+  chatHistory: { id: string; title: string; timestamp: number }[];
 
   setAuthStatus: (status: 'checking' | 'authenticated' | 'unauthenticated') => void;
   setCurrentView: (view: 'auth' | 'main') => void;
@@ -34,7 +37,10 @@ interface AppState {
   closeFile: (path: string) => void;
   setActiveFile: (path: string | null) => void;
   setRightSidebarOpen: (open: boolean) => void;
-  setActiveSidebarTab: (tab: 'chat' | 'files' | 'settings') => void;
+  setActiveSidebarTab: (tab: 'chat' | 'files' | 'settings' | 'history') => void;
+  setProjects: (projects: { name: string; path: string }[]) => void;
+  setCurrentProject: (path: string | null) => void;
+  addChatHistory: (entry: { id: string; title: string; timestamp: number }) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   setSidebarExpanded: (expanded: boolean) => void;
   setChatInput: (text: string) => void;
@@ -76,6 +82,9 @@ export const useStore = create<AppState>((set) => ({
   sidebarExpanded: false,
   chatInput: '',
   locale: 'en',
+  projects: [],
+  currentProject: null,
+  chatHistory: [],
   settings: {
     theme: 'dark',
     experimentalMode: false,
@@ -116,6 +125,9 @@ export const useStore = create<AppState>((set) => ({
   setActiveFile: (path) => set({ activeFilePath: path }),
   setRightSidebarOpen: (open) => set({ rightSidebarOpen: open }),
   setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
+  setProjects: (projects) => set({ projects }),
+  setCurrentProject: (path) => set((s) => ({ currentProject: path, cwd: path || s.cwd })),
+  addChatHistory: (entry) => set((s) => ({ chatHistory: [entry, ...s.chatHistory] })),
   updateSettings: (partial) =>
     set((s) => ({ settings: { ...s.settings, ...partial } })),
   setSidebarExpanded: (expanded) => set({ sidebarExpanded: expanded }),

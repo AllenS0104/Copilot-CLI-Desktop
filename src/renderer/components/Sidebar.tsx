@@ -15,6 +15,13 @@ const FilesIcon = () => (
   </svg>
 );
 
+const HistoryIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
 const SettingsIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
     <circle cx="12" cy="12" r="3" />
@@ -34,10 +41,10 @@ const ExpandIcon = ({ expanded }: { expanded: boolean }) => (
   </svg>
 );
 
-const tabs = [
+const topTabs = [
   { id: 'chat' as const, icon: ChatIcon, labelKey: 'sidebar.chat' },
   { id: 'files' as const, icon: FilesIcon, labelKey: 'sidebar.files' },
-  { id: 'settings' as const, icon: SettingsIcon, labelKey: 'sidebar.settings' },
+  { id: 'history' as const, icon: HistoryIcon, labelKey: 'sidebar.history' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -47,43 +54,113 @@ export const Sidebar: React.FC = () => {
   const setSidebarExpanded = useStore((s) => s.setSidebarExpanded);
   const authStatus = useStore((s) => s.authStatus);
   const locale = useStore((s) => s.locale);
+  const projects = useStore((s) => s.projects);
+  const currentProject = useStore((s) => s.currentProject);
+  const setProjects = useStore((s) => s.setProjects);
+  const setCurrentProject = useStore((s) => s.setCurrentProject);
 
   const localeIndicator: Record<Locale, string> = { 'en': 'EN', 'zh-CN': '中', 'ja': '日', 'ko': '한' };
+
+  const handleAddProject = async () => {
+    const folderPath = await window.electronAPI?.app.selectFolder();
+    if (folderPath) {
+      const name = folderPath.split(/[\\/]/).pop() || folderPath;
+      const already = projects.some((p) => p.path === folderPath);
+      if (!already) {
+        setProjects([...projects, { name, path: folderPath }]);
+      }
+      setCurrentProject(folderPath);
+    }
+  };
+
+  const renderTabButton = (tab: typeof topTabs[number]) => {
+    const Icon = tab.icon;
+    const isActive = activeSidebarTab === tab.id;
+    const label = t(tab.labelKey, locale);
+    return (
+      <button
+        key={tab.id}
+        className={`relative flex items-center gap-3 rounded-lg transition-all duration-150 ${
+          sidebarExpanded ? 'px-3 py-2' : 'w-10 h-10 justify-center mx-auto'
+        } ${
+          isActive
+            ? 'text-slate-100 bg-slate-700/50'
+            : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-200'
+        }`}
+        onClick={() => setActiveSidebarTab(tab.id === activeSidebarTab ? 'chat' : tab.id)}
+        title={!sidebarExpanded ? label : undefined}
+      >
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r" />
+        )}
+        <Icon />
+        {sidebarExpanded && <span className="text-sm font-medium">{label}</span>}
+      </button>
+    );
+  };
 
   return (
     <div
       className="bg-slate-800/50 border-r border-slate-700/50 flex flex-col py-3 transition-all duration-200"
       style={{ width: sidebarExpanded ? 240 : 48 }}
     >
-      <div className="flex flex-col gap-1 px-1 flex-1">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeSidebarTab === tab.id;
-          const label = t(tab.labelKey, locale);
-          return (
-            <button
-              key={tab.id}
-              className={`relative flex items-center gap-3 rounded-lg transition-all duration-150 ${
-                sidebarExpanded ? 'px-3 py-2' : 'w-10 h-10 justify-center mx-auto'
-              } ${
-                isActive
-                  ? 'text-slate-100 bg-slate-700/50'
-                  : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-200'
-              }`}
-              onClick={() => setActiveSidebarTab(tab.id === activeSidebarTab ? 'chat' : tab.id)}
-              title={!sidebarExpanded ? label : undefined}
-            >
-              {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r" />
-              )}
-              <Icon />
-              {sidebarExpanded && <span className="text-sm font-medium">{label}</span>}
-            </button>
-          );
-        })}
+      {/* Top - Global capabilities */}
+      <div className="flex flex-col gap-1 px-1">
+        {topTabs.map(renderTabButton)}
       </div>
 
+      {/* Middle - Projects */}
+      {sidebarExpanded && (
+        <div className="flex flex-col px-3 mt-4 flex-1 overflow-y-auto">
+          <span className="text-xs uppercase tracking-wider text-slate-600 font-medium mb-2">
+            {t('sidebar.projects', locale)}
+          </span>
+          {projects.length === 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 italic">{t('sidebar.no_projects', locale)}</p>
+              <button
+                onClick={handleAddProject}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                + {t('sidebar.add_project', locale)}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {projects.map((p) => (
+                <button
+                  key={p.path}
+                  onClick={() => setCurrentProject(p.path)}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+                    currentProject === p.path
+                      ? 'text-slate-100 bg-slate-700/40'
+                      : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-200'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                    currentProject === p.path ? 'bg-indigo-500' : 'bg-slate-600'
+                  }`} />
+                  <span className="truncate">{p.name}</span>
+                </button>
+              ))}
+              <button
+                onClick={handleAddProject}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                + {t('sidebar.add_project', locale)}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!sidebarExpanded && <div className="flex-1" />}
+
+      {/* Bottom - System */}
       <div className="mt-auto px-1 space-y-2">
+        {/* Settings button */}
+        {renderTabButton({ id: 'settings' as any, icon: SettingsIcon, labelKey: 'sidebar.settings' } as any)}
+
         <div className={`flex items-center gap-2 ${sidebarExpanded ? 'px-3 py-2' : 'justify-center py-2'}`}>
           <div className="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-xs text-slate-300 font-medium">
             U

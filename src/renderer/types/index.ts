@@ -68,6 +68,12 @@ export interface ElectronAPI {
     getHomedir: () => Promise<string>;
     selectFolder: () => Promise<string | null>;
   };
+  menu: {
+    onOpenProject: (cb: () => void) => () => void;
+    onCloseProject: (cb: () => void) => () => void;
+    onToggleSidebar: (cb: () => void) => () => void;
+    onAbout: (cb: () => void) => () => void;
+  };
 }
 
 declare global {

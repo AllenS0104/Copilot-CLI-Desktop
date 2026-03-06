@@ -53,4 +53,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getHomedir: () => ipcRenderer.invoke('app:getHomedir'),
     selectFolder: () => ipcRenderer.invoke('app:selectFolder'),
   },
+  menu: {
+    onOpenProject: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('menu:open-project', handler);
+      return () => ipcRenderer.removeListener('menu:open-project', handler);
+    },
+    onCloseProject: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('menu:close-project', handler);
+      return () => ipcRenderer.removeListener('menu:close-project', handler);
+    },
+    onToggleSidebar: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('menu:toggle-sidebar', handler);
+      return () => ipcRenderer.removeListener('menu:toggle-sidebar', handler);
+    },
+    onAbout: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('menu:about', handler);
+      return () => ipcRenderer.removeListener('menu:about', handler);
+    },
+  },
 });

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as pty from 'node-pty';
@@ -12,6 +12,35 @@ const copilotCmd = process.platform === 'win32' ? 'copilot.cmd' : 'copilot';
 const defaultHome = process.env.HOME || process.env.USERPROFILE || '.';
 
 function createWindow(): void {
+  const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        { label: 'Open Project', accelerator: 'CmdOrCtrl+O', click: () => { mainWindow?.webContents.send('menu:open-project'); } },
+        { label: 'Close Project', click: () => { mainWindow?.webContents.send('menu:close-project'); } },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { label: 'Toggle Sidebar', accelerator: 'CmdOrCtrl+B', click: () => { mainWindow?.webContents.send('menu:toggle-sidebar'); } },
+        { type: 'separator' },
+        { role: 'toggleDevTools' },
+        { role: 'reload' },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        { label: 'About Copilot Desktop', click: () => { mainWindow?.webContents.send('menu:about'); } },
+      ],
+    },
+  ];
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,

@@ -6,6 +6,8 @@ import { CodePreview } from './components/CodePreview';
 import { StatusBar } from './components/StatusBar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { LoginPage } from './components/LoginPage';
+import { Header } from './components/Header';
+import { HistoryPanel } from './components/HistoryPanel';
 import { useStore } from './store';
 import { t } from './utils/i18n';
 
@@ -72,6 +74,8 @@ const App: React.FC = () => {
         return <FileTree />;
       case 'settings':
         return <SettingsPanel />;
+      case 'history':
+        return <HistoryPanel />;
       default:
         return null;
     }
@@ -92,6 +96,7 @@ const App: React.FC = () => {
           </div>
         )}
         <div className="flex-1 flex flex-col overflow-hidden">
+          <Header />
           <ChatPanel />
         </div>
         {rightSidebarOpen && (
