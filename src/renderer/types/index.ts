@@ -49,6 +49,8 @@ export interface ElectronAPI {
     checkInstall: () => Promise<{ installed: boolean; platform: string }>;
     install: () => Promise<{ success: boolean; message: string }>;
     onInstallProgress: (callback: (data: { data: string }) => void) => () => void;
+    login: () => Promise<{ success: boolean; message: string }>;
+    onLoginData: (callback: (data: string) => void) => () => void;
     getModels: () => Promise<string[]>;
     onStdout: (callback: (data: { id: string; data: string }) => void) => () => void;
     onDone: (callback: (data: { id: string; exitCode: number }) => void) => () => void;

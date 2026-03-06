@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('copilot:install-progress', handler);
       return () => ipcRenderer.removeListener('copilot:install-progress', handler);
     },
+    login: () => ipcRenderer.invoke('copilot:login') as Promise<{ success: boolean; message: string }>,
+    onLoginData: (callback: (data: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload);
+      ipcRenderer.on('copilot:loginData', handler);
+      return () => ipcRenderer.removeListener('copilot:loginData', handler);
+    },
   },
   pty: {
     create: (args: { cols: number; rows: number; cwd?: string }) =>

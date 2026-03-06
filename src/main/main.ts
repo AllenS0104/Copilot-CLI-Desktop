@@ -249,6 +249,42 @@ ipcMain.handle('copilot:checkAuth', async () => {
   });
 });
 
+// ── Auth Login (device code flow) ──
+
+ipcMain.handle('copilot:login', async () => {
+  return new Promise<{ success: boolean; message: string }>((resolve) => {
+    let output = '';
+    const child = spawn(copilotCmd, ['auth', 'login'], {
+      env: process.env as Record<string, string>,
+      shell: process.platform === 'win32',
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      output += text;
+      mainWindow?.webContents.send('copilot:loginData', text);
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      output += text;
+      mainWindow?.webContents.send('copilot:loginData', text);
+    });
+
+    child.on('close', (code) => {
+      const lower = output.toLowerCase();
+      if (code === 0 || lower.includes('logged in') || lower.includes('successfully') || lower.includes('authentication complete')) {
+        resolve({ success: true, message: 'Authenticated' });
+      } else {
+        resolve({ success: false, message: output.trim() || `Exit code ${code}` });
+      }
+    });
+
+    child.on('error', (err) => {
+      resolve({ success: false, message: err.message });
+    });
+  });
+});
+
 // ── Models ──
 
 ipcMain.handle('copilot:getModels', () => {
