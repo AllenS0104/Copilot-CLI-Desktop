@@ -17,18 +17,27 @@ export const LoginPage: React.FC = () => {
   const cleanupExitRef = useRef<(() => void) | null>(null);
   const ptyIdRef = useRef<string | null>(null);
   const urlOpenedRef = useRef(false);
+  const loginSentRef = useRef(false);
+  const allOutputRef = useRef('');
 
   useEffect(() => {
     handleLogin();
     return () => {
       cleanupDataRef.current?.();
       cleanupExitRef.current?.();
-      // Kill PTY on unmount
       if (ptyIdRef.current) {
         window.electronAPI?.pty.kill({ id: ptyIdRef.current }).catch(() => {});
       }
     };
   }, []);
+
+  const handleLoginSuccess = () => {
+    setStatus('success');
+    setTimeout(() => {
+      setAuthStatus('authenticated');
+      setCurrentView('main');
+    }, 1500);
+  };
 
   const handleLogin = async () => {
     if (!window.electronAPI) return;
@@ -37,24 +46,43 @@ export const LoginPage: React.FC = () => {
     setDeviceCode('');
     setVerificationUrl('');
     setLogs('');
+    loginSentRef.current = false;
     urlOpenedRef.current = false;
+    allOutputRef.current = '';
 
-    // Clean up previous listeners
     cleanupDataRef.current?.();
     cleanupExitRef.current?.();
 
     try {
-      // Step 1: Create PTY running copilot in interactive mode
       const ptyId = await window.electronAPI.pty.create({ cols: 120, rows: 40 });
       ptyIdRef.current = ptyId;
 
-      // Step 2: Listen to PTY output
       const cleanupData = window.electronAPI.pty.onData(({ id, data }) => {
         if (id !== ptyId) return;
         const text = stripAnsi(data);
+        allOutputRef.current += text;
         setLogs((prev) => prev + text);
 
-        // Parse device code (XXXX-XXXX pattern)
+        const cumulative = allOutputRef.current.toLowerCase();
+
+        // Detect copilot TUI is ready (prompt appeared) — then send /login
+        if (!loginSentRef.current && (text.includes('Type @') || text.includes('shift+tab') || text.includes('Describe a task'))) {
+          loginSentRef.current = true;
+          // Small delay to let TUI fully render
+          setTimeout(() => {
+            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
+          }, 500);
+        }
+
+        // Detect already authenticated (copilot shows "Unlimited reqs" or similar)
+        if (cumulative.includes('unlimited reqs') || cumulative.includes('already logged in') || cumulative.includes('already authenticated')) {
+          if (loginSentRef.current) {
+            handleLoginSuccess();
+            return;
+          }
+        }
+
+        // Parse device code (XXXX-XXXX)
         const codeMatch = text.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/);
         if (codeMatch) {
           setDeviceCode(codeMatch[1]);
@@ -63,31 +91,26 @@ export const LoginPage: React.FC = () => {
         // Parse verification URL and auto-open browser
         const urlMatch = text.match(/(https?:\/\/github\.com[^\s\x00-\x1f]*)/);
         if (urlMatch && !urlOpenedRef.current) {
-          const url = urlMatch[1];
-          setVerificationUrl(url);
+          setVerificationUrl(urlMatch[1]);
           urlOpenedRef.current = true;
-          window.open(url, '_blank');
+          window.open(urlMatch[1], '_blank');
         }
 
-        // Check for login success
+        // Detect login success
         const lower = text.toLowerCase();
-        if (lower.includes('logged in') || lower.includes('authentication complete') || lower.includes('successfully')) {
-          setStatus('success');
-          setTimeout(() => {
-            setAuthStatus('authenticated');
-            setCurrentView('main');
-          }, 1500);
+        if (lower.includes('logged in') || lower.includes('authentication complete') || lower.includes('successfully authenticated')) {
+          handleLoginSuccess();
         }
       });
       cleanupDataRef.current = cleanupData;
 
       const cleanupExit = window.electronAPI.pty.onExit(({ id, exitCode }) => {
         if (id !== ptyId) return;
-        // If not already succeeded, treat unexpected exit as error
         setStatus((prev) => {
           if (prev === 'success') return prev;
-          if (exitCode === 0) {
-            // Might have succeeded - check auth
+          // Check accumulated output for auth signals
+          const cumulative = allOutputRef.current.toLowerCase();
+          if (cumulative.includes('unlimited reqs') || cumulative.includes('logged in')) {
             setAuthStatus('authenticated');
             setCurrentView('main');
             return 'success';
@@ -98,15 +121,18 @@ export const LoginPage: React.FC = () => {
       });
       cleanupExitRef.current = cleanupExit;
 
-      // Step 3: Wait for copilot interactive mode to initialize, then send /login
-      setTimeout(async () => {
-        try {
-          await window.electronAPI.pty.write({ id: ptyId, data: '/login\n' });
-        } catch {
-          setStatus('error');
-          setErrorMsg('Failed to send login command');
+      // Fallback: if after 8 seconds we see "Unlimited reqs" but /login wasn't sent, force it
+      setTimeout(() => {
+        const cumulative = allOutputRef.current.toLowerCase();
+        if (cumulative.includes('unlimited reqs') && !loginSentRef.current) {
+          loginSentRef.current = true;
+          window.electronAPI.pty.write({ id: ptyIdRef.current!, data: '/login\n' }).catch(() => {});
         }
-      }, 1500);
+        // If already authenticated and still waiting, just proceed
+        if (cumulative.includes('unlimited reqs') && status === 'waiting') {
+          handleLoginSuccess();
+        }
+      }, 8000);
 
     } catch (err: any) {
       setStatus('error');
@@ -137,7 +163,6 @@ export const LoginPage: React.FC = () => {
     <div className="flex items-center justify-center h-screen bg-slate-900 text-slate-100 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.08),transparent_70%)]" />
       <div className="relative w-full max-w-md glass bg-slate-800/80 border border-slate-700/50 rounded-2xl shadow-2xl p-8 space-y-6 animate-slide-up">
-        {/* Back button */}
         <button
           onClick={handleBack}
           className="absolute top-4 left-4 text-slate-400 hover:text-slate-200 transition-colors"
@@ -224,7 +249,6 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* CLI output log (collapsed) */}
         {logs && (
           <details className="text-xs text-slate-500">
             <summary className="cursor-pointer hover:text-slate-400 transition-colors">CLI Output</summary>
