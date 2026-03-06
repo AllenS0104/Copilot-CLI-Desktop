@@ -13,13 +13,20 @@ export const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [logs, setLogs] = useState('');
-  const cleanupRef = useRef<(() => void) | null>(null);
+  const cleanupDataRef = useRef<(() => void) | null>(null);
+  const cleanupExitRef = useRef<(() => void) | null>(null);
+  const ptyIdRef = useRef<string | null>(null);
+  const urlOpenedRef = useRef(false);
 
   useEffect(() => {
-    // Auto-start login on mount
     handleLogin();
     return () => {
-      cleanupRef.current?.();
+      cleanupDataRef.current?.();
+      cleanupExitRef.current?.();
+      // Kill PTY on unmount
+      if (ptyIdRef.current) {
+        window.electronAPI?.pty.kill({ id: ptyIdRef.current }).catch(() => {});
+      }
     };
   }, []);
 
@@ -30,50 +37,80 @@ export const LoginPage: React.FC = () => {
     setDeviceCode('');
     setVerificationUrl('');
     setLogs('');
+    urlOpenedRef.current = false;
 
-    // Listen for streaming login output
-    const cleanup = window.electronAPI.copilot.onLoginData((raw: string) => {
-      const text = stripAnsi(raw);
-      setLogs((prev) => prev + text);
-
-      // Parse device code (XXXX-XXXX pattern)
-      const codeMatch = text.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/);
-      if (codeMatch) {
-        setDeviceCode(codeMatch[1]);
-      }
-      // Parse verification URL
-      const urlMatch = text.match(/(https?:\/\/github\.com\/login\/device[^\s]*)/);
-      if (urlMatch) {
-        setVerificationUrl(urlMatch[1]);
-        // Auto-open browser
-        window.open(urlMatch[1], '_blank');
-      }
-      // Also try generic URL
-      const genericUrl = text.match(/(https?:\/\/github\.com[^\s]*)/);
-      if (genericUrl && !verificationUrl) {
-        setVerificationUrl(genericUrl[1]);
-        window.open(genericUrl[1], '_blank');
-      }
-    });
-    cleanupRef.current = cleanup;
+    // Clean up previous listeners
+    cleanupDataRef.current?.();
+    cleanupExitRef.current?.();
 
     try {
-      const result = await window.electronAPI.copilot.login();
-      cleanup();
-      if (result.success) {
-        setStatus('success');
-        setTimeout(() => {
-          setAuthStatus('authenticated');
-          setCurrentView('main');
-        }, 1500);
-      } else {
-        setStatus('error');
-        setErrorMsg(result.message);
-      }
+      // Step 1: Create PTY running copilot in interactive mode
+      const ptyId = await window.electronAPI.pty.create({ cols: 120, rows: 40 });
+      ptyIdRef.current = ptyId;
+
+      // Step 2: Listen to PTY output
+      const cleanupData = window.electronAPI.pty.onData(({ id, data }) => {
+        if (id !== ptyId) return;
+        const text = stripAnsi(data);
+        setLogs((prev) => prev + text);
+
+        // Parse device code (XXXX-XXXX pattern)
+        const codeMatch = text.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/);
+        if (codeMatch) {
+          setDeviceCode(codeMatch[1]);
+        }
+
+        // Parse verification URL and auto-open browser
+        const urlMatch = text.match(/(https?:\/\/github\.com[^\s\x00-\x1f]*)/);
+        if (urlMatch && !urlOpenedRef.current) {
+          const url = urlMatch[1];
+          setVerificationUrl(url);
+          urlOpenedRef.current = true;
+          window.open(url, '_blank');
+        }
+
+        // Check for login success
+        const lower = text.toLowerCase();
+        if (lower.includes('logged in') || lower.includes('authentication complete') || lower.includes('successfully')) {
+          setStatus('success');
+          setTimeout(() => {
+            setAuthStatus('authenticated');
+            setCurrentView('main');
+          }, 1500);
+        }
+      });
+      cleanupDataRef.current = cleanupData;
+
+      const cleanupExit = window.electronAPI.pty.onExit(({ id, exitCode }) => {
+        if (id !== ptyId) return;
+        // If not already succeeded, treat unexpected exit as error
+        setStatus((prev) => {
+          if (prev === 'success') return prev;
+          if (exitCode === 0) {
+            // Might have succeeded - check auth
+            setAuthStatus('authenticated');
+            setCurrentView('main');
+            return 'success';
+          }
+          setErrorMsg(`Process exited with code ${exitCode}`);
+          return 'error';
+        });
+      });
+      cleanupExitRef.current = cleanupExit;
+
+      // Step 3: Wait for copilot interactive mode to initialize, then send /login
+      setTimeout(async () => {
+        try {
+          await window.electronAPI.pty.write({ id: ptyId, data: '/login\n' });
+        } catch {
+          setStatus('error');
+          setErrorMsg('Failed to send login command');
+        }
+      }, 1500);
+
     } catch (err: any) {
-      cleanup();
       setStatus('error');
-      setErrorMsg(err?.message || 'Login failed');
+      setErrorMsg(err?.message || 'Failed to start login process');
     }
   };
 
@@ -88,7 +125,11 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    cleanupRef.current?.();
+    cleanupDataRef.current?.();
+    cleanupExitRef.current?.();
+    if (ptyIdRef.current) {
+      window.electronAPI?.pty.kill({ id: ptyIdRef.current }).catch(() => {});
+    }
     setCurrentView('auth_choice');
   };
 
