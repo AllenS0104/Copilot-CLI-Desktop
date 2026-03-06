@@ -1,221 +1,228 @@
-# Copilot Desktop — 项目文档
+# Copilot Desktop
 
-> 将 GitHub Copilot CLI 包装为一个现代化的 Electron 桌面应用，让不熟悉命令行的用户也能直观地使用 AI 编程助手。
+<p align="center">
+  <img src="assets/icon.png" width="128" alt="Copilot Desktop" />
+</p>
 
----
+<p align="center">
+  <strong>A modern desktop UI for GitHub Copilot CLI</strong><br/>
+  Making AI-powered coding accessible to everyone — no terminal required.
+</p>
 
-## 📋 项目进度
-
-### 版本历程
-
-| 版本 | 日期 | 里程碑 | 状态 |
-|------|------|--------|------|
-| V1.0 | 2026-03-05 | 项目脚手架搭建 (Electron + React + TS) | ✅ 完成 |
-| V1.1 | 2026-03-05 | Code Review 修复 6 个关键问题 | ✅ 完成 |
-| V1.2 | 2026-03-05 | ANSI 转义序列全面解析，消除乱码 | ✅ 完成 |
-| V2.0 | 2026-03-05 | 功能实现：身份验证、对话、文件管理 | ✅ 完成 |
-| V2.1 | 2026-03-05 | 修复 model 列表和 --cwd 参数 | ✅ 完成 |
-| V3.0 | 2026-03-06 | UI 大重构：Slate/Indigo 主题、SVG 图标 | ✅ 完成 |
-| V3.1 | 2026-03-06 | 多语言国际化 (en/zh-CN/ja/ko) | ✅ 完成 |
-| V3.2 | 2026-03-06 | UI-V2：Header、Projects、History、系统菜单 | ✅ 完成 |
-
-### Git 提交记录
-
-```
-bebc7cf feat: UI-V2 redesign - Header, Projects, History, System Menu
-9093ce3 feat: add multi-language i18n support (en/zh-CN/ja/ko)
-ab04a0a feat: V3 UI redesign - modern, professional dark theme
-8aba83d fix: remove invalid --cwd flag from copilot spawn args
-c7ec344 fix: update model list to match current Copilot CLI allowed models
-52b32ae feat: V2 - full UI implementation with auth, chat, and file management
-ddb5216 fix: comprehensive ANSI escape stripping to eliminate garbled output
-f720603 fix: resolve 6 critical issues from code review
-7547240 feat: initial Copilot CLI Desktop app scaffold
-```
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green" alt="platform" />
+  <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license" />
+  <img src="https://img.shields.io/badge/electron-28-purple" alt="electron" />
+</p>
 
 ---
 
-## 🏗️ 项目架构
+## ✨ What is Copilot Desktop?
 
-### 整体结构
+Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/cli/) in a modern Electron desktop app with a graphical interface. It's built for users who prefer a visual UI over the command line.
+
+### Key Features
+
+- 🤖 **AI Chat** — Stream responses with Markdown rendering & syntax highlighting
+- 🔐 **Auto/Manual Auth** — GitHub device code flow with guided steps
+- 📁 **File Explorer** — Browse files, @ mention in prompts
+- 🧠 **17 AI Models** — Claude, GPT, Gemini — switch with one click
+- 🌍 **Multi-language** — English, 中文, 日本語, 한국어
+- 📂 **Project Management** — Add/switch projects, auto-sync working directory
+- 💬 **Conversation History** — Browse and restore past sessions
+- ⚡ **Quick Actions** — Explain, Test, Debug, Refactor cards
+- 🔧 **Slash Commands** — /help, /model, /compact, /diff, /review
+- 🚀 **Auto CLI Install** — Detects missing CLI and guides installation
+
+---
+
+## 📦 Downloads
+
+### Windows
+
+| File | Type | Description |
+|------|------|-------------|
+| `CopilotDesktop-Setup-0.1.0.exe` | **NSIS Installer** | Standard installer with desktop & start menu shortcuts |
+| `CopilotDesktop-Portable-0.1.0.exe` | **Portable (Beta)** | No installation needed, run directly |
+
+### Linux
+
+| File | Type | Description |
+|------|------|-------------|
+| `CopilotDesktop-0.1.0-linux-x64.tar.gz` | **tar.gz** | Extract and run `./copilot-desktop` |
+
+> **Note:** MSI installer and `.deb`/`.AppImage` packages require elevated build permissions. They will be available in future releases.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- A valid [GitHub Copilot](https://github.com/features/copilot) subscription
+- The app will auto-detect and guide you to install Copilot CLI if not found
+
+### Install & Run
+
+**Windows (Installer):**
+1. Download `CopilotDesktop-Setup-0.1.0.exe`
+2. Run the installer → choose install directory
+3. Launch from desktop shortcut or start menu
+
+**Windows (Portable):**
+1. Download `CopilotDesktop-Portable-0.1.0.exe`
+2. Double-click to run — no installation needed
+
+**Linux:**
+```bash
+tar -xzf CopilotDesktop-0.1.0-linux-x64.tar.gz
+cd copilot-desktop
+./copilot-desktop
+```
+
+### First Launch Flow
+
+1. **CLI Check** — App detects if Copilot CLI is installed
+2. **CLI Install** — If missing, guides you through installation (restart required after)
+3. **Auth Choice** — Select Auto (existing credentials) or Manual (terminal-based login)
+4. **Ready** — Start chatting with Copilot!
+
+---
+
+## 🏗️ Architecture
 
 ```
 copilot-desktop/
 ├── src/
-│   ├── main/                    # Electron 主进程
-│   │   ├── main.ts              # 窗口管理、IPC、PTY、系统菜单
-│   │   └── preload.ts           # contextBridge API 暴露
-│   └── renderer/                # React 渲染进程
-│       ├── App.tsx              # 根组件、路由、布局
-│       ├── index.tsx            # React 入口
-│       ├── index.html           # HTML 模板
-│       ├── components/          # UI 组件
-│       │   ├── Header.tsx       # 上下文栏 (项目/文件/状态)
-│       │   ├── Sidebar.tsx      # 侧边导航 (Chat/Files/History/Projects/Settings)
-│       │   ├── ChatPanel.tsx    # 对话面板 (消息/输入/快捷操作)
-│       │   ├── FileTree.tsx     # 文件浏览器
-│       │   ├── CodePreview.tsx  # 代码预览/Diff
-│       │   ├── LoginPage.tsx    # GitHub 登录页
-│       │   ├── HistoryPanel.tsx # 对话历史
-│       │   ├── ModelSelector.tsx# 模型选择器
-│       │   ├── SettingsPanel.tsx# 设置面板
-│       │   ├── StatusBar.tsx    # 底部状态线
-│       │   ├── SessionManager.tsx
-│       │   └── ToolCallViewer.tsx
-│       ├── store/
-│       │   └── index.ts         # Zustand 全局状态管理
-│       ├── styles/
-│       │   └── globals.css      # Tailwind + 自定义样式/动画
-│       ├── types/
-│       │   └── index.ts         # TypeScript 类型定义
-│       └── utils/
-│           ├── ansiParser.ts    # 终端 ANSI 转义序列解析器
-│           └── i18n.ts          # 国际化翻译系统
-├── package.json
-├── tsconfig.json                # Renderer TS 配置
-├── tsconfig.main.json           # Main process TS 配置
-├── webpack.config.js            # Webpack 打包配置
-├── tailwind.config.js           # Tailwind CSS 配置
-├── postcss.config.js            # PostCSS 配置
-└── dist/
-    ├── main/                    # 编译后的主进程 JS
-    ├── renderer/                # 编译后的渲染进程 bundle
-    └── win-unpacked/            # Windows 免安装包
-        └── Copilot Desktop.exe  # 可执行文件 (~540MB)
+│   ├── main/                     # Electron Main Process
+│   │   ├── main.ts               # Window, IPC handlers, PTY, system menu
+│   │   └── preload.ts            # contextBridge API surface
+│   └── renderer/                 # React Renderer Process
+│       ├── App.tsx               # Root component & view routing
+│       ├── components/
+│       │   ├── AuthChoicePage.tsx # Auto/Manual auth selection
+│       │   ├── InstallPage.tsx   # CLI install prompt + restart
+│       │   ├── LoginPage.tsx     # Terminal-based GitHub login
+│       │   ├── ChatPanel.tsx     # Chat UI with streaming
+│       │   ├── Sidebar.tsx       # Navigation (Chat/Files/History/Settings)
+│       │   ├── Header.tsx        # Context bar
+│       │   ├── FileTree.tsx      # File explorer with @ mentions
+│       │   ├── SettingsPanel.tsx  # Model/language/preferences
+│       │   ├── HistoryPanel.tsx   # Conversation history
+│       │   └── ...
+│       ├── store/index.ts        # Zustand global state
+│       ├── utils/
+│       │   ├── i18n.ts           # 4 locales × 80+ keys
+│       │   └── ansiParser.ts     # Full ANSI/CSI/OSC parser
+│       └── types/index.ts        # TypeScript interfaces
+├── assets/
+│   ├── icon.ico                  # Windows icon
+│   └── icon.png                  # Linux icon
+├── release/                      # Built packages (gitignored)
+│   ├── windows/
+│   └── linux/
+└── package.json
 ```
 
-### 架构图
+### Tech Stack
+
+| Category | Technology | Purpose |
+|----------|-----------|---------|
+| **Framework** | Electron 28 | Desktop container |
+| **Frontend** | React 18 + TypeScript 5 | UI rendering |
+| **State** | Zustand 4 | Lightweight global state |
+| **Styling** | Tailwind CSS 3 | Utility-first CSS |
+| **Bundler** | Webpack 5 | Module bundling |
+| **Terminal** | node-pty | Interactive CLI communication |
+| **Markdown** | react-markdown + react-syntax-highlighter | AI response rendering |
+| **Packaging** | electron-builder | Cross-platform distribution |
+
+### How It Works
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Electron Main Process                 │
-│  ┌───────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │  BrowserWindow │  │   node-pty   │  │  child_process│ │
-│  │  (窗口管理)    │  │  (PTY 交互)  │  │ (copilot -sp) │ │
-│  └───────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
-│          │ IPC              │ IPC              │ IPC     │
-├──────────┼──────────────────┼──────────────────┼────────┤
-│          │      preload.ts (contextBridge)      │        │
-├──────────┼──────────────────────────────────────┼────────┤
-│                    Renderer Process (React)               │
-│                                                           │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │  System Menu (File / View / Help)                 │    │
-│  ├────────────┬─────────────────────────────────────┤    │
-│  │  Sidebar   │  Header (Context Bar)                │    │
-│  │            ├─────────────────────────────────────┤    │
-│  │  Chat      │                                     │    │
-│  │  Files     │  ChatPanel / Workspace              │    │
-│  │  History   │  (消息流 + Markdown + 代码高亮)      │    │
-│  │  ─────     │                                     │    │
-│  │  Projects  ├─────────────────────────────────────┤    │
-│  │  ─────     │  Input Bar                          │    │
-│  │  Settings  │  [@Files] [@Context] [/Commands]    │    │
-│  │  User      │  [textarea]              [Send ▶]   │    │
-│  └────────────┴─────────────────────────────────────┘    │
-│                                                           │
-│  ┌─────────────────────────────────────────────────┐     │
-│  │          Zustand Store (全局状态)                 │     │
-│  │  auth │ messages │ files │ projects │ locale ... │     │
-│  └─────────────────────────────────────────────────┘     │
-└───────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│              Electron Main Process               │
+│  ┌─────────────┐ ┌──────────┐ ┌──────────────┐  │
+│  │ BrowserWindow│ │ node-pty │ │child_process │  │
+│  │  (Window)    │ │ (Login)  │ │(copilot -sp) │  │
+│  └──────┬──────┘ └────┬─────┘ └──────┬───────┘  │
+│         └──────── IPC ─┴──────────────┘          │
+├─────────── preload.ts (contextBridge) ───────────┤
+│              Renderer Process (React)             │
+│  ┌────────┬──────────────────────┬─────────┐     │
+│  │Sidebar │ Header + ChatPanel   │CodeView │     │
+│  │        │ (Streaming + MD)     │         │     │
+│  │        │ Input Bar            │         │     │
+│  └────────┴──────────────────────┴─────────┘     │
+│  ┌─────────────────────────────────────────┐     │
+│  │  Zustand Store (auth/messages/locale..) │     │
+│  └─────────────────────────────────────────┘     │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ 技术栈
+## 🎨 Design
 
-| 类别 | 技术 | 用途 |
-|------|------|------|
-| **框架** | Electron 28 | 桌面应用容器 |
-| **前端** | React 18 + TypeScript 5 | UI 渲染 |
-| **状态管理** | Zustand 4 | 轻量级全局状态 |
-| **样式** | Tailwind CSS 3 | 原子化 CSS |
-| **打包** | Webpack 5 | 模块打包 |
-| **终端** | node-pty | 与 Copilot CLI 进程交互 |
-| **Markdown** | react-markdown + react-syntax-highlighter | AI 回复渲染 |
-| **Diff** | diff2html | 代码变更对比 |
-| **分发** | electron-builder | Windows 免安装打包 |
+- **Theme:** Slate/Indigo dark mode (inspired by Linear, Arc, Cursor)
+- **Icons:** SVG line icons — minimal and clean
+- **Animations:** Fade-in, slide-up, pulse loading bar
+- **Layout:** Collapsible sidebar + context header + main workspace
 
 ---
 
-## 🔑 核心功能
-
-### 双模式 CLI 桥接
-
-| 模式 | 技术 | 场景 |
-|------|------|------|
-| **Prompt API** | `copilot -sp "prompt"` (child_process) | 日常对话、代码生成 |
-| **Interactive PTY** | node-pty 终端模拟 | 登录认证、交互式确认 |
-
-### 已实现功能清单
-
-- ✅ GitHub 身份验证 (Device Code Flow)
-- ✅ AI 对话 (流式响应、Markdown 渲染、代码高亮)
-- ✅ 文件浏览 (目录树、点击预览、@ 引用)
-- ✅ 模型切换 (17 个模型: Claude/GPT/Gemini)
-- ✅ 项目管理 (添加/切换项目、自动同步工作目录)
-- ✅ 对话历史
-- ✅ 快捷操作卡片 (解释项目/生成测试/调试/重构)
-- ✅ 斜杠命令 (/help, /model, /compact, /diff, /review)
-- ✅ 多语言 (English, 中文, 日本語, 한국어)
-- ✅ 系统菜单 (File/View/Help + 快捷键)
-- ✅ 代码预览 (语法高亮、Tab 管理)
-- ✅ ANSI 转义序列全面解析
-
-### 支持的 AI 模型
-
-```
-Claude: sonnet-4.6, sonnet-4.5, haiku-4.5, opus-4.6, opus-4.6-fast, opus-4.5, sonnet-4
-Gemini: 3-pro-preview
-GPT:    5.3-codex, 5.2-codex, 5.2, 5.1-codex-max, 5.1-codex, 5.1, 5.1-codex-mini, 5-mini, 4.1
-```
-
----
-
-## 🎨 设计语言
-
-- **配色**: Slate 蓝灰底色 + Indigo 强调色 (inspired by Linear/Arc/Cursor)
-- **图标**: SVG 线条图标，克制不炫技
-- **动效**: 淡入 (fade-in)、滑入 (slide-up)、脉冲 (pulse-bar)
-- **布局**: 三区结构 (Sidebar + Header + Main)
-- **原则**: 冷静的现代感，信息层级清晰，大方留白
-
----
-
-## 🚀 使用方式
+## 🛠️ Development
 
 ```bash
-# 开发模式
+# Install dependencies
+npm install
+
+# Development mode (hot-reload)
 npm run dev
 
-# 生产构建
+# Production build
 npm run build
 
-# 打包 Windows 免安装版
-npm run pack
+# Package for Windows
+npx electron-builder --win nsis portable
 
-# 直接运行打包结果
-dist\win-unpacked\Copilot Desktop.exe
+# Package for Linux
+npx electron-builder --linux tar.gz
 ```
 
-### 前置条件
+### Supported AI Models (17)
 
-- [GitHub Copilot CLI](https://github.com/github/copilot-cli) 已安装并在 PATH 中
-- 有效的 Copilot 订阅
+```
+Claude:  sonnet-4.6 · sonnet-4.5 · haiku-4.5 · opus-4.6 · opus-4.6-fast · opus-4.5 · sonnet-4
+Gemini:  3-pro-preview
+GPT:     5.3-codex · 5.2-codex · 5.2 · 5.1-codex-max · 5.1-codex · 5.1 · 5.1-codex-mini · 5-mini · 4.1
+```
 
 ---
 
-## 📁 关键文件说明
+## 📋 Version History
 
-| 文件 | 职责 |
-|------|------|
-| `main.ts` | Electron 主进程：窗口、IPC (pty/fs/copilot/app/menu)、系统菜单 |
-| `preload.ts` | contextBridge：安全暴露 IPC 方法到渲染进程 |
-| `store/index.ts` | Zustand 状态：auth、messages、files、projects、locale 等 |
-| `ChatPanel.tsx` | 核心对话 UI：消息流、流式渲染、输入栏、快捷操作 |
-| `Sidebar.tsx` | 三分区导航：全局能力 / 项目列表 / 系统设置 |
-| `Header.tsx` | 上下文栏：当前项目/文件、连接状态、模型、语言 |
-| `LoginPage.tsx` | GitHub Device Code 认证流程 |
-| `i18n.ts` | 国际化：4 语言 × 60+ 翻译键 |
-| `ansiParser.ts` | ANSI/CSI/OSC/DCS 全序列解析器 |
+| Version | Date | Milestone |
+|---------|------|-----------|
+| v0.1.0 | 2026-03-06 | 🎉 First public release |
+| — | 2026-03-06 | CLI auto-detection & installation |
+| — | 2026-03-06 | Auth choice (Auto/Manual) with terminal flow |
+| — | 2026-03-06 | Linux tar.gz build |
+| — | 2026-03-06 | Multi-language i18n (en/zh-CN/ja/ko) |
+| — | 2026-03-06 | UI V3 redesign + V2 features (Header/Projects/History) |
+| — | 2026-03-05 | Core functionality: auth, chat, file explorer |
+| — | 2026-03-05 | Initial project scaffold |
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+<p align="center">
+  Built with ❤️ by the Copilot Desktop Team<br/>
+  Powered by <a href="https://github.com/features/copilot/cli/">GitHub Copilot CLI</a>
+</p>
