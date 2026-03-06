@@ -18,6 +18,8 @@ export const LoginPage: React.FC = () => {
   const ptyIdRef = useRef<string | null>(null);
   const urlOpenedRef = useRef(false);
   const loginSentRef = useRef(false);
+  const trustHandledRef = useRef(false);
+  const accountHandledRef = useRef(false);
   const allOutputRef = useRef('');
 
   useEffect(() => {
@@ -47,6 +49,8 @@ export const LoginPage: React.FC = () => {
     setVerificationUrl('');
     setLogs('');
     loginSentRef.current = false;
+    trustHandledRef.current = false;
+    accountHandledRef.current = false;
     urlOpenedRef.current = false;
     allOutputRef.current = '';
 
@@ -63,19 +67,50 @@ export const LoginPage: React.FC = () => {
         allOutputRef.current += text;
         setLogs((prev) => prev + text);
 
-        const cumulative = allOutputRef.current.toLowerCase();
+        const cumulative = allOutputRef.current;
+        const cumulativeLower = cumulative.toLowerCase();
 
-        // Detect copilot TUI is ready (prompt appeared) — then send /login
-        if (!loginSentRef.current && (text.includes('Type @') || text.includes('shift+tab') || text.includes('Describe a task'))) {
-          loginSentRef.current = true;
-          // Small delay to let TUI fully render
+        // Step 1: Handle "Confirm folder trust" prompt → select "Yes" (option 1, press Enter)
+        if (!trustHandledRef.current && (cumulativeLower.includes('do you trust') || cumulativeLower.includes('confirm folder trust'))) {
+          trustHandledRef.current = true;
           setTimeout(() => {
-            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
+            // Press Enter to select default "1. Yes"
+            window.electronAPI.pty.write({ id: ptyId, data: '\r' }).catch(() => {});
           }, 500);
         }
 
-        // Detect already authenticated (copilot shows "Unlimited reqs" or similar)
-        if (cumulative.includes('unlimited reqs') || cumulative.includes('already logged in') || cumulative.includes('already authenticated')) {
+        // Step 2: Detect "Please use /login" or TUI ready → send /login
+        if (!loginSentRef.current && (
+          cumulativeLower.includes('please use /login') ||
+          cumulativeLower.includes('/login') && cumulativeLower.includes('log in to copilot') ||
+          (trustHandledRef.current && (text.includes('Type @') || text.includes('shift+tab')))
+        )) {
+          loginSentRef.current = true;
+          setTimeout(() => {
+            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
+          }, 800);
+        }
+
+        // Also send /login if TUI is ready and trust was already handled or not needed
+        if (!loginSentRef.current && !trustHandledRef.current && (text.includes('Type @') || text.includes('shift+tab') || text.includes('Describe a task'))) {
+          // No trust prompt appeared, TUI ready — wait a bit more then send /login
+          loginSentRef.current = true;
+          setTimeout(() => {
+            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
+          }, 800);
+        }
+
+        // Step 3: Handle "What account do you want to log into?" → select GitHub.com (Enter)
+        if (!accountHandledRef.current && cumulativeLower.includes('what account do you want to log into')) {
+          accountHandledRef.current = true;
+          setTimeout(() => {
+            // Default selection is "GitHub.com", just press Enter
+            window.electronAPI.pty.write({ id: ptyId, data: '\r' }).catch(() => {});
+          }, 500);
+        }
+
+        // Detect already authenticated
+        if (cumulativeLower.includes('unlimited reqs') || cumulativeLower.includes('already logged in') || cumulativeLower.includes('already authenticated')) {
           if (loginSentRef.current) {
             handleLoginSuccess();
             return;

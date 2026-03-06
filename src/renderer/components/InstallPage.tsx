@@ -36,7 +36,7 @@ export const InstallPage: React.FC = () => {
         setStatus('success');
         setTimeout(() => {
           setCliStatus('installed');
-          setCurrentView('auth');
+          setCurrentView('auth_choice');
         }, 1500);
       } else {
         setStatus('error');
