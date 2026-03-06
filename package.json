@@ -53,14 +53,27 @@
     "win": {
       "target": [
         {
-          "target": "dir",
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
           "arch": ["x64"]
         }
       ],
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Copilot Desktop",
+      "artifactName": "CopilotDesktop-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "CopilotDesktop-Portable.exe"
+      "artifactName": "CopilotDesktop-Portable-${version}.${ext}"
     }
   }
 }
