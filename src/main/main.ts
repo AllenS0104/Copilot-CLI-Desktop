@@ -148,6 +148,72 @@ ipcMain.handle('copilot:cancel', (_event, args: { id: string }) => {
   }
 });
 
+// ── CLI Installation Check ──
+
+ipcMain.handle('copilot:checkInstall', async () => {
+  return new Promise<{ installed: boolean; platform: string }>((resolve) => {
+    const platform = process.platform; // 'win32' | 'darwin' | 'linux'
+    const checkCmd = platform === 'win32' ? 'where' : 'which';
+    const child = spawn(checkCmd, ['copilot'], {
+      shell: platform === 'win32',
+      env: process.env as Record<string, string>,
+    });
+    child.on('close', (code) => {
+      resolve({ installed: code === 0, platform });
+    });
+    child.on('error', () => {
+      resolve({ installed: false, platform });
+    });
+  });
+});
+
+ipcMain.handle('copilot:install', async () => {
+  const platform = process.platform;
+  return new Promise<{ success: boolean; message: string }>((resolve) => {
+    let cmd: string;
+    let args: string[];
+
+    if (platform === 'win32') {
+      cmd = 'winget';
+      args = ['install', '--id', 'GitHub.Copilot', '--accept-source-agreements', '--accept-package-agreements'];
+    } else if (platform === 'darwin') {
+      cmd = 'brew';
+      args = ['install', 'copilot-cli'];
+    } else {
+      // Linux: try npm global install
+      cmd = 'npm';
+      args = ['install', '-g', '@github/copilot'];
+    }
+
+    let output = '';
+    const child = spawn(cmd, args, {
+      shell: platform === 'win32',
+      env: process.env as Record<string, string>,
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+      mainWindow?.webContents.send('copilot:install-progress', { data: chunk.toString() });
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+      mainWindow?.webContents.send('copilot:install-progress', { data: chunk.toString() });
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ success: true, message: 'Installation complete' });
+      } else {
+        resolve({ success: false, message: output.trim() || `Exit code ${code}` });
+      }
+    });
+
+    child.on('error', (err) => {
+      resolve({ success: false, message: err.message });
+    });
+  });
+});
+
 // ── Auth Check ──
 
 ipcMain.handle('copilot:checkAuth', async () => {

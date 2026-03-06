@@ -6,16 +6,20 @@ import { CodePreview } from './components/CodePreview';
 import { StatusBar } from './components/StatusBar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { LoginPage } from './components/LoginPage';
+import { InstallPage } from './components/InstallPage';
 import { Header } from './components/Header';
 import { HistoryPanel } from './components/HistoryPanel';
 import { useStore } from './store';
 import { t } from './utils/i18n';
 
 const App: React.FC = () => {
+  const cliStatus = useStore((s) => s.cliStatus);
   const authStatus = useStore((s) => s.authStatus);
   const currentView = useStore((s) => s.currentView);
   const setAuthStatus = useStore((s) => s.setAuthStatus);
   const setCurrentView = useStore((s) => s.setCurrentView);
+  const setCliStatus = useStore((s) => s.setCliStatus);
+  const setCliPlatform = useStore((s) => s.setCliPlatform);
   const setCwd = useStore((s) => s.setCwd);
   const setAvailableModels = useStore((s) => s.setAvailableModels);
   const activeSidebarTab = useStore((s) => s.activeSidebarTab);
@@ -26,6 +30,24 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       if (!window.electronAPI) return;
+
+      // Step 1: Check if Copilot CLI is installed
+      try {
+        const installResult = await window.electronAPI.copilot.checkInstall();
+        setCliPlatform(installResult.platform);
+        if (!installResult.installed) {
+          setCliStatus('not_installed');
+          setCurrentView('cli_install');
+          return;
+        }
+        setCliStatus('installed');
+      } catch {
+        setCliStatus('not_installed');
+        setCurrentView('cli_install');
+        return;
+      }
+
+      // Step 2: Check auth
       try {
         const result = await window.electronAPI.copilot.checkAuth();
         if (result.authenticated) {
@@ -39,6 +61,8 @@ const App: React.FC = () => {
         setAuthStatus('unauthenticated');
         setCurrentView('auth');
       }
+
+      // Step 3: Load cwd and models
       try {
         const cwd = await window.electronAPI.app.getCwd();
         setCwd(cwd);
@@ -50,6 +74,23 @@ const App: React.FC = () => {
     };
     init();
   }, []);
+
+  if (currentView === 'cli_check' || cliStatus === 'checking') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-900 text-slate-100">
+        <div className="text-center space-y-4 animate-fade-in">
+          <svg className="w-12 h-12 mx-auto text-indigo-500 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+          <p className="text-slate-400 text-sm">{t('app.checking_cli', locale)}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'cli_install') {
+    return <InstallPage />;
+  }
 
   if (authStatus === 'checking') {
     return (

@@ -3,8 +3,10 @@ import type { Message, FileNode, OpenFile, Settings } from '../types';
 import type { Locale } from '../utils/i18n';
 
 interface AppState {
+  cliStatus: 'checking' | 'installed' | 'not_installed';
+  cliPlatform: string;
   authStatus: 'checking' | 'authenticated' | 'unauthenticated';
-  currentView: 'auth' | 'main';
+  currentView: 'cli_check' | 'cli_install' | 'auth' | 'main';
   messages: Message[];
   isThinking: boolean;
   cwd: string;
@@ -24,7 +26,9 @@ interface AppState {
   chatHistory: { id: string; title: string; timestamp: number }[];
 
   setAuthStatus: (status: 'checking' | 'authenticated' | 'unauthenticated') => void;
-  setCurrentView: (view: 'auth' | 'main') => void;
+  setCurrentView: (view: 'cli_check' | 'cli_install' | 'auth' | 'main') => void;
+  setCliStatus: (status: 'checking' | 'installed' | 'not_installed') => void;
+  setCliPlatform: (platform: string) => void;
   addMessage: (msg: Message) => void;
   updateLastMessage: (content: string) => void;
   clearMessages: () => void;
@@ -49,8 +53,10 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
+  cliStatus: 'checking',
+  cliPlatform: '',
   authStatus: 'checking',
-  currentView: 'auth',
+  currentView: 'cli_check' as const,
   messages: [],
   isThinking: false,
   cwd: '',
@@ -94,6 +100,8 @@ export const useStore = create<AppState>((set) => ({
 
   setAuthStatus: (status) => set({ authStatus: status }),
   setCurrentView: (view) => set({ currentView: view }),
+  setCliStatus: (status) => set({ cliStatus: status }),
+  setCliPlatform: (platform) => set({ cliPlatform: platform }),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
   updateLastMessage: (content) =>
     set((s) => {
