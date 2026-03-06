@@ -1,196 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { t } from '../utils/i18n';
-import { stripAnsi } from '../utils/ansiParser';
 
 export const LoginPage: React.FC = () => {
   const setAuthStatus = useStore((s) => s.setAuthStatus);
   const setCurrentView = useStore((s) => s.setCurrentView);
   const locale = useStore((s) => s.locale);
-  const [status, setStatus] = useState<'idle' | 'waiting' | 'success' | 'error'>('idle');
-  const [deviceCode, setDeviceCode] = useState('');
-  const [verificationUrl, setVerificationUrl] = useState('');
+  const [status, setStatus] = useState<'launching' | 'polling' | 'success' | 'error'>('launching');
   const [errorMsg, setErrorMsg] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [logs, setLogs] = useState('');
-  const cleanupDataRef = useRef<(() => void) | null>(null);
-  const cleanupExitRef = useRef<(() => void) | null>(null);
-  const ptyIdRef = useRef<string | null>(null);
-  const urlOpenedRef = useRef(false);
-  const loginSentRef = useRef(false);
-  const trustHandledRef = useRef(false);
-  const accountHandledRef = useRef(false);
-  const allOutputRef = useRef('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    handleLogin();
+    launchTerminal();
     return () => {
-      cleanupDataRef.current?.();
-      cleanupExitRef.current?.();
-      if (ptyIdRef.current) {
-        window.electronAPI?.pty.kill({ id: ptyIdRef.current }).catch(() => {});
-      }
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
 
-  const handleLoginSuccess = () => {
-    setStatus('success');
-    setTimeout(() => {
-      setAuthStatus('authenticated');
-      setCurrentView('main');
-    }, 1500);
-  };
-
-  const handleLogin = async () => {
+  const launchTerminal = async () => {
     if (!window.electronAPI) return;
-    setStatus('waiting');
+    setStatus('launching');
     setErrorMsg('');
-    setDeviceCode('');
-    setVerificationUrl('');
-    setLogs('');
-    loginSentRef.current = false;
-    trustHandledRef.current = false;
-    accountHandledRef.current = false;
-    urlOpenedRef.current = false;
-    allOutputRef.current = '';
-
-    cleanupDataRef.current?.();
-    cleanupExitRef.current?.();
 
     try {
-      const ptyId = await window.electronAPI.pty.create({ cols: 120, rows: 40 });
-      ptyIdRef.current = ptyId;
-
-      const cleanupData = window.electronAPI.pty.onData(({ id, data }) => {
-        if (id !== ptyId) return;
-        const text = stripAnsi(data);
-        allOutputRef.current += text;
-        setLogs((prev) => prev + text);
-
-        const cumulative = allOutputRef.current;
-        const cumulativeLower = cumulative.toLowerCase();
-
-        // Step 1: Handle "Confirm folder trust" prompt → select "Yes" (option 1, press Enter)
-        if (!trustHandledRef.current && (cumulativeLower.includes('do you trust') || cumulativeLower.includes('confirm folder trust'))) {
-          trustHandledRef.current = true;
-          setTimeout(() => {
-            // Press Enter to select default "1. Yes"
-            window.electronAPI.pty.write({ id: ptyId, data: '\r' }).catch(() => {});
-          }, 500);
-        }
-
-        // Step 2: Detect "Please use /login" or TUI ready → send /login
-        if (!loginSentRef.current && (
-          cumulativeLower.includes('please use /login') ||
-          cumulativeLower.includes('/login') && cumulativeLower.includes('log in to copilot') ||
-          (trustHandledRef.current && (text.includes('Type @') || text.includes('shift+tab')))
-        )) {
-          loginSentRef.current = true;
-          setTimeout(() => {
-            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
-          }, 800);
-        }
-
-        // Also send /login if TUI is ready and trust was already handled or not needed
-        if (!loginSentRef.current && !trustHandledRef.current && (text.includes('Type @') || text.includes('shift+tab') || text.includes('Describe a task'))) {
-          // No trust prompt appeared, TUI ready — wait a bit more then send /login
-          loginSentRef.current = true;
-          setTimeout(() => {
-            window.electronAPI.pty.write({ id: ptyId, data: '/login\n' }).catch(() => {});
-          }, 800);
-        }
-
-        // Step 3: Handle "What account do you want to log into?" → select GitHub.com (Enter)
-        if (!accountHandledRef.current && cumulativeLower.includes('what account do you want to log into')) {
-          accountHandledRef.current = true;
-          setTimeout(() => {
-            // Default selection is "GitHub.com", just press Enter
-            window.electronAPI.pty.write({ id: ptyId, data: '\r' }).catch(() => {});
-          }, 500);
-        }
-
-        // Detect already authenticated
-        if (cumulativeLower.includes('unlimited reqs') || cumulativeLower.includes('already logged in') || cumulativeLower.includes('already authenticated')) {
-          if (loginSentRef.current) {
-            handleLoginSuccess();
-            return;
+      await window.electronAPI.copilot.login();
+      // Terminal opened — now poll checkAuth every 3 seconds
+      setStatus('polling');
+      pollRef.current = setInterval(async () => {
+        try {
+          const result = await window.electronAPI.copilot.checkAuth();
+          if (result.authenticated) {
+            if (pollRef.current) clearInterval(pollRef.current);
+            setStatus('success');
+            setTimeout(() => {
+              setAuthStatus('authenticated');
+              setCurrentView('main');
+            }, 1500);
           }
-        }
-
-        // Parse device code (XXXX-XXXX)
-        const codeMatch = text.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/);
-        if (codeMatch) {
-          setDeviceCode(codeMatch[1]);
-        }
-
-        // Parse verification URL and auto-open browser
-        const urlMatch = text.match(/(https?:\/\/github\.com[^\s\x00-\x1f]*)/);
-        if (urlMatch && !urlOpenedRef.current) {
-          setVerificationUrl(urlMatch[1]);
-          urlOpenedRef.current = true;
-          window.open(urlMatch[1], '_blank');
-        }
-
-        // Detect login success
-        const lower = text.toLowerCase();
-        if (lower.includes('logged in') || lower.includes('authentication complete') || lower.includes('successfully authenticated')) {
-          handleLoginSuccess();
-        }
-      });
-      cleanupDataRef.current = cleanupData;
-
-      const cleanupExit = window.electronAPI.pty.onExit(({ id, exitCode }) => {
-        if (id !== ptyId) return;
-        setStatus((prev) => {
-          if (prev === 'success') return prev;
-          // Check accumulated output for auth signals
-          const cumulative = allOutputRef.current.toLowerCase();
-          if (cumulative.includes('unlimited reqs') || cumulative.includes('logged in')) {
-            setAuthStatus('authenticated');
-            setCurrentView('main');
-            return 'success';
-          }
-          setErrorMsg(`Process exited with code ${exitCode}`);
-          return 'error';
-        });
-      });
-      cleanupExitRef.current = cleanupExit;
-
-      // Fallback: if after 8 seconds we see "Unlimited reqs" but /login wasn't sent, force it
-      setTimeout(() => {
-        const cumulative = allOutputRef.current.toLowerCase();
-        if (cumulative.includes('unlimited reqs') && !loginSentRef.current) {
-          loginSentRef.current = true;
-          window.electronAPI.pty.write({ id: ptyIdRef.current!, data: '/login\n' }).catch(() => {});
-        }
-        // If already authenticated and still waiting, just proceed
-        if (cumulative.includes('unlimited reqs') && status === 'waiting') {
-          handleLoginSuccess();
-        }
-      }, 8000);
-
+        } catch {}
+      }, 3000);
     } catch (err: any) {
       setStatus('error');
-      setErrorMsg(err?.message || 'Failed to start login process');
+      setErrorMsg(err?.message || 'Failed to open terminal');
     }
-  };
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(deviceCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleOpenUrl = () => {
-    if (verificationUrl) window.open(verificationUrl, '_blank');
   };
 
   const handleBack = () => {
-    cleanupDataRef.current?.();
-    cleanupExitRef.current?.();
-    if (ptyIdRef.current) {
-      window.electronAPI?.pty.kill({ id: ptyIdRef.current }).catch(() => {});
-    }
+    if (pollRef.current) clearInterval(pollRef.current);
     setCurrentView('auth_choice');
   };
 
@@ -213,10 +69,9 @@ export const LoginPage: React.FC = () => {
             <path d="M12 8v4l2 2" />
           </svg>
           <h1 className="text-2xl font-semibold tracking-tight">{t('login.title', locale)}</h1>
-          <p className="text-slate-400 text-sm">{t('login.subtitle', locale)}</p>
         </div>
 
-        {status === 'waiting' && !deviceCode && (
+        {status === 'launching' && (
           <div className="flex items-center justify-center gap-2 text-slate-400 py-4">
             <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -226,37 +81,32 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {deviceCode && status === 'waiting' && (
-          <div className="space-y-4 animate-fade-in">
-            <p className="text-center text-sm text-slate-400">{t('login.enter_code', locale)}</p>
-            <div className="flex items-center justify-center">
-              <code className="text-4xl font-bold tracking-[0.2em] text-indigo-400 bg-slate-900 px-6 py-3 rounded-xl border border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                {deviceCode}
-              </code>
+        {status === 'polling' && (
+          <div className="space-y-5 animate-fade-in">
+            <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-5 space-y-3">
+              <p className="text-sm text-slate-300 font-medium">{t('login.terminal_instructions', locale)}</p>
+              <ol className="text-sm text-slate-400 space-y-2 list-decimal list-inside">
+                <li>{t('login.step_trust', locale)}</li>
+                <li>{t('login.step_login', locale)}</li>
+                <li>{t('login.step_account', locale)}</li>
+                <li>{t('login.step_code', locale)}</li>
+              </ol>
             </div>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={handleCopyCode}
-                className="bg-slate-700 hover:bg-slate-600 text-sm px-4 py-2 rounded-lg transition-all text-slate-300"
-              >
-                {copied ? `✓ ${t('login.copied', locale)}` : t('login.copy', locale)}
-              </button>
-              {verificationUrl && (
-                <button
-                  onClick={handleOpenUrl}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-sm px-4 py-2 rounded-lg transition-all text-white"
-                >
-                  {t('login.open_url', locale)}
-                </button>
-              )}
-            </div>
-            <div className="flex items-center justify-center gap-2 text-slate-500 text-xs">
-              <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+
+            <div className="flex items-center justify-center gap-2 text-indigo-400 text-sm">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <span>{t('login.waiting', locale)}</span>
+              <span>{t('login.waiting_terminal', locale)}</span>
             </div>
+
+            <button
+              onClick={launchTerminal}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium py-2.5 px-4 rounded-xl transition-all text-sm"
+            >
+              {t('login.reopen_terminal', locale)}
+            </button>
           </div>
         )}
 
@@ -273,24 +123,15 @@ export const LoginPage: React.FC = () => {
         {status === 'error' && (
           <div className="space-y-3 animate-fade-in">
             <div className="bg-red-900/30 border border-red-700/50 rounded-xl p-3 text-red-300 text-sm text-center">
-              {errorMsg || t('login.error_exit', locale)}
+              {errorMsg}
             </div>
             <button
-              onClick={handleLogin}
+              onClick={launchTerminal}
               className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold py-3 px-6 rounded-xl text-sm transition-all"
             >
               {t('login.try_again', locale)}
             </button>
           </div>
-        )}
-
-        {logs && (
-          <details className="text-xs text-slate-500">
-            <summary className="cursor-pointer hover:text-slate-400 transition-colors">CLI Output</summary>
-            <pre className="mt-2 bg-slate-900 rounded-lg p-3 max-h-32 overflow-auto whitespace-pre-wrap font-mono">
-              {logs}
-            </pre>
-          </details>
         )}
       </div>
     </div>

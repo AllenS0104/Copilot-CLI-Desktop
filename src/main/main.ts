@@ -249,39 +249,37 @@ ipcMain.handle('copilot:checkAuth', async () => {
   });
 });
 
-// ── Auth Login (device code flow) ──
+// ── Auth Login (open visible terminal for interactive login) ──
 
-ipcMain.handle('copilot:login', async () => {
+ipcMain.handle('copilot:loginTerminal', async () => {
   return new Promise<{ success: boolean; message: string }>((resolve) => {
-    let output = '';
-    const child = spawn(copilotCmd, ['auth', 'login'], {
-      env: process.env as Record<string, string>,
-      shell: process.platform === 'win32',
-    });
+    // Open a visible cmd/terminal window that runs copilot interactively
+    // User handles trust prompt, /login, account selection in the real terminal
+    let child: ChildProcess;
+    if (process.platform === 'win32') {
+      // start cmd /k keeps window open; copilot runs interactively
+      child = spawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', 'copilot'], {
+        env: process.env as Record<string, string>,
+        detached: true,
+        stdio: 'ignore',
+      });
+    } else {
+      // On macOS/Linux open a terminal emulator
+      const terminal = process.platform === 'darwin' ? 'open' : 'x-terminal-emulator';
+      const termArgs = process.platform === 'darwin'
+        ? ['-a', 'Terminal', '--args', '-e', 'copilot']
+        : ['-e', 'copilot'];
+      child = spawn(terminal, termArgs, {
+        env: process.env as Record<string, string>,
+        detached: true,
+        stdio: 'ignore',
+      });
+    }
+    child.unref();
 
-    child.stdout?.on('data', (chunk: Buffer) => {
-      const text = chunk.toString();
-      output += text;
-      mainWindow?.webContents.send('copilot:loginData', text);
-    });
-    child.stderr?.on('data', (chunk: Buffer) => {
-      const text = chunk.toString();
-      output += text;
-      mainWindow?.webContents.send('copilot:loginData', text);
-    });
-
-    child.on('close', (code) => {
-      const lower = output.toLowerCase();
-      if (code === 0 || lower.includes('logged in') || lower.includes('successfully') || lower.includes('authentication complete')) {
-        resolve({ success: true, message: 'Authenticated' });
-      } else {
-        resolve({ success: false, message: output.trim() || `Exit code ${code}` });
-      }
-    });
-
-    child.on('error', (err) => {
-      resolve({ success: false, message: err.message });
-    });
+    // The terminal is now open. We poll for auth completion.
+    // Resolve immediately — the renderer will poll checkAuth.
+    resolve({ success: true, message: 'Terminal opened' });
   });
 });
 

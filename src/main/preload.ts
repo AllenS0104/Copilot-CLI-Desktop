@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('copilot:install-progress', handler);
       return () => ipcRenderer.removeListener('copilot:install-progress', handler);
     },
-    login: () => ipcRenderer.invoke('copilot:login') as Promise<{ success: boolean; message: string }>,
+    login: () => ipcRenderer.invoke('copilot:loginTerminal') as Promise<{ success: boolean; message: string }>,
     onLoginData: (callback: (data: string) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload);
       ipcRenderer.on('copilot:loginData', handler);
