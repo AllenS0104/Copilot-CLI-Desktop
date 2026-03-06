@@ -2,6 +2,11 @@
   "name": "copilot-desktop",
   "version": "0.1.0",
   "description": "Desktop UI wrapper for GitHub Copilot CLI",
+  "author": {
+    "name": "Copilot Desktop Team",
+    "email": "copilot-desktop@github.com"
+  },
+  "homepage": "https://github.com/features/copilot/cli/",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "concurrently \"cross-env NODE_ENV=development webpack serve --config webpack.config.js\" \"cross-env NODE_ENV=development electron .\"",
@@ -74,6 +79,29 @@
     },
     "portable": {
       "artifactName": "CopilotDesktop-Portable-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Development",
+      "icon": "assets/icon.png",
+      "artifactName": "CopilotDesktop-${version}-linux-x64.${ext}"
     }
   }
 }
