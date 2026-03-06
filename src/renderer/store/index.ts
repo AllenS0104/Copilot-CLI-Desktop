@@ -15,6 +15,8 @@ interface AppState {
   rightSidebarOpen: boolean;
   activeSidebarTab: 'chat' | 'files' | 'settings';
   settings: Settings;
+  sidebarExpanded: boolean;
+  chatInput: string;
 
   setAuthStatus: (status: 'checking' | 'authenticated' | 'unauthenticated') => void;
   setCurrentView: (view: 'auth' | 'main') => void;
@@ -32,6 +34,9 @@ interface AppState {
   setRightSidebarOpen: (open: boolean) => void;
   setActiveSidebarTab: (tab: 'chat' | 'files' | 'settings') => void;
   updateSettings: (settings: Partial<Settings>) => void;
+  setSidebarExpanded: (expanded: boolean) => void;
+  setChatInput: (text: string) => void;
+  appendToChatInput: (text: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -65,6 +70,8 @@ export const useStore = create<AppState>((set) => ({
   activeFilePath: null,
   rightSidebarOpen: false,
   activeSidebarTab: 'chat',
+  sidebarExpanded: false,
+  chatInput: '',
   settings: {
     theme: 'dark',
     experimentalMode: false,
@@ -107,4 +114,8 @@ export const useStore = create<AppState>((set) => ({
   setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
   updateSettings: (partial) =>
     set((s) => ({ settings: { ...s.settings, ...partial } })),
+  setSidebarExpanded: (expanded) => set({ sidebarExpanded: expanded }),
+  setChatInput: (text) => set({ chatInput: text }),
+  appendToChatInput: (text) =>
+    set((s) => ({ chatInput: s.chatInput + text })),
 }));

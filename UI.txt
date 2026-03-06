@@ -1,0 +1,132 @@
+一、整体信息架构（这是“现代感”的根源）
+✅ 推荐的 3 区结构（非常稳定、非常现代）
+┌───────────┬───────────────────────────┐
+│  Sidebar  │         Main Area          │
+│           │  ┌─────────────────────┐  │
+│  Projects │  │ Header (Context)     │  │
+│  Files    │  ├─────────────────────┤  │
+│  Chats    │  │                     │  │
+│  Settings │  │  Conversation /     │  │
+│           │  │  Workspace           │  │
+│           │  │                     │  │
+│           │  ├─────────────────────┤  │
+│           │  │ Input / Actions     │  │
+└───────────┴───────────────────────────┘
+
+
+现代感 ≠ 复杂，而是层级清楚、信息自解释
+
+
+二、左侧 Sidebar：从“图标栏”升级为「项目导航」
+你现在的问题不是样式，而是：
+👉 左侧栏“功能弱于它应该承担的角色”
+✅ 建议的 Sidebar 结构（混合模式专用）
+默认收起态（你现在的状态）
+
+只显示图标（✅ 保留）
+hover 显示 tooltip（❗必加）
+
+展开态（关键）
+▶ Project Alpha
+   ├─ Files
+   ├─ Conversations
+   ├─ Logs
+   └─ Settings
+
+▶ Project Beta
+
+✅ 好处：
+
+一眼看出“这是项目驱动”
+AI 不再是“全局聊天”，而是项目上下文中的助手
+非常符合 Linear / Arc / Cursor / Copilot Next 这一代产品逻辑
+
+
+三、主区域：从「欢迎语」变成「工作起点」
+❌ 现在的问题
+
+Emoji + 一句话 = Demo 感
+没有行动路径
+
+✅ 现代桌面 App 的标准「空态」
+结构建议（你可以直接照抄）
+Title（强）
+
+Start working with your project
+
+Subtitle（弱）
+
+Select a project or choose a task to get started.
+
+Quick Actions（核心）
+用 卡片 / 大按钮，不是文字链接：
+[ Explain this project structure ]
+[ Generate tests for selected files ]
+[ Help debug recent errors ]
+[ Refactor for readability ]
+
+✅ 每个按钮都是：
+
+一个明确任务
+一个 AI 能力入口
+一个“我点了就会发生事情”的承诺
+
+
+这是现代 AI 工具最重要的 UI 特征之一。
+
+
+四、输入区：这是你整个 App 的“发动机”
+你现在的输入区 功能是对的，但“权重太低”。
+✅ 现代输入区的 4 个特征
+1️⃣ 它是一个「工具条 + 输入框」，不是单纯聊天
+建议结构：
+[ + Files ] [ @Context ] [ /Commands ] | 输入框 | [ Send ]
+
+
++ Files：附加文件 / 选中文件
+@Context：当前项目 / 当前文件 / 当前 selection
+/Commands：Explain / Fix / Test / Refactor
+
+👉 你可以先只做 UI，不做完整逻辑。
+
+2️⃣ Send 是 主按钮
+
+明确的主色
+hover / active 有反馈
+disabled 状态清晰
+
+
+3️⃣ 输入框支持「多行 + 自动增长」
+这是桌面端的基本尊重 😄
+
+4️⃣ 上方有「当前上下文提示」
+例如：
+
+Context: Project Alpha · 3 files selected
+
+这会让产品立刻显得很“专业”。
+
+五、视觉风格：你要的是「冷静的现代感」
+你说的是“现代人的审美”，这通常意味着：
+
+❌ 不炫技
+❌ 不强装科技感
+✅ 克制、干净、信息密度可控
+
+✅ 推荐的视觉方向（非常安全）
+🎨 配色
+
+深色中性底色（偏蓝或偏灰）
+1 个主强调色（蓝 / 紫 / 青都行）
+少用纯黑，用「深色层级」
+
+🔤 字体
+
+无衬线
+信息密度适中
+不要太多字重
+
+📐 间距
+
+大于你直觉的留白
+所有模块对齐到统一栅格

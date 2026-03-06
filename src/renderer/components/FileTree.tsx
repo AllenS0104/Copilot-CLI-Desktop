@@ -26,30 +26,39 @@ const FileTreeNode: React.FC<{
   return (
     <div>
       <div
-        className="group flex items-center gap-1 px-2 py-1 hover:bg-gray-700 cursor-pointer text-sm"
+        className="group flex items-center gap-1.5 px-2 py-1 hover:bg-slate-700/30 cursor-pointer text-sm transition-colors"
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleToggle}
       >
-        <span className="w-4 text-center text-gray-400">
-          {node.type === 'directory' ? (expanded ? '▼' : '▶') : '•'}
+        <span className="w-4 text-center text-slate-500 text-xs">
+          {node.type === 'directory' ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={`w-3 h-3 inline transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          ) : (
+            <span className="text-slate-500">·</span>
+          )}
         </span>
-        <span className={`flex-1 truncate ${node.type === 'directory' ? 'text-yellow-400' : 'text-gray-300'}`}>
+        <span className={`flex-1 truncate ${node.type === 'directory' ? 'text-amber-400/80' : 'text-slate-400'}`}>
           {node.name}
         </span>
         {node.type === 'file' && (
           <button
             onClick={(e) => { e.stopPropagation(); onMention(node); }}
-            className="hidden group-hover:block text-xs text-blue-400 hover:text-blue-300 px-1"
-            title="Insert @mention in chat"
+            className="hidden group-hover:flex items-center text-[10px] text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-1.5 py-0.5 rounded-full transition-all"
+            title="Add to prompt"
           >
-            @
+            @ Add
           </button>
         )}
       </div>
-      {expanded &&
-        children.map((child) => (
-          <FileTreeNode key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onMention={onMention} />
-        ))}
+      {expanded && (
+        <div className="animate-fade-in">
+          {children.map((child) => (
+            <FileTreeNode key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onMention={onMention} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -60,7 +69,7 @@ export const FileTree: React.FC = () => {
   const openFile = useStore((s) => s.openFile);
   const cwd = useStore((s) => s.cwd);
   const setCwd = useStore((s) => s.setCwd);
-  const addMessage = useStore((s) => s.addMessage);
+  const appendToChatInput = useStore((s) => s.appendToChatInput);
 
   useEffect(() => {
     const loadRoot = async () => {
@@ -81,12 +90,11 @@ export const FileTree: React.FC = () => {
   };
 
   const handleMention = (node: FileNode) => {
-    addMessage({
-      id: `msg-${Date.now()}`,
-      role: 'user',
-      content: `@${node.path}`,
-      timestamp: Date.now(),
-    });
+    // Get relative path from cwd
+    const relativePath = cwd && node.path.startsWith(cwd)
+      ? node.path.slice(cwd.length).replace(/^[\\/]/, '')
+      : node.name;
+    appendToChatInput(`@${relativePath} `);
   };
 
   const handleChangeFolder = async () => {
@@ -95,19 +103,30 @@ export const FileTree: React.FC = () => {
     if (folder) setCwd(folder);
   };
 
+  const breadcrumbs = cwd ? cwd.split(/[\\/]/).slice(-2) : ['...'];
+
   return (
     <div className="py-2">
       <div className="px-3 py-2 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Files</span>
+        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Explorer</span>
         <button
           onClick={handleChangeFolder}
-          className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+          className="text-slate-500 hover:text-slate-300 p-1 rounded hover:bg-slate-700/30 transition-all"
+          title="Change folder"
         >
-          📂 Change
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            <path d="M12 11v6M9 14h6" />
+          </svg>
         </button>
       </div>
-      <div className="px-3 py-1 text-xs text-gray-500 truncate" title={cwd}>
-        {cwd || '...'}
+      <div className="px-3 py-1 text-xs text-slate-600 truncate flex items-center gap-1" title={cwd}>
+        {breadcrumbs.map((part, i) => (
+          <span key={i} className="flex items-center gap-1">
+            {i > 0 && <span className="text-slate-700">/</span>}
+            <span className={i === breadcrumbs.length - 1 ? 'text-slate-400' : ''}>{part}</span>
+          </span>
+        ))}
       </div>
       {files.map((node) => (
         <FileTreeNode key={node.path} node={node} depth={0} onSelect={handleSelect} onMention={handleMention} />
