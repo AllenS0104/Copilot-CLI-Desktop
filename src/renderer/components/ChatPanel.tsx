@@ -4,12 +4,13 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from '../store';
 import type { Message } from '../types';
+import { t } from '../utils/i18n';
 
 const quickActions = [
-  { emoji: '📖', label: 'Explain this project', prompt: 'Explain this project structure and what it does' },
-  { emoji: '🧪', label: 'Generate tests', prompt: 'Generate tests for the main components' },
-  { emoji: '🐛', label: 'Debug recent errors', prompt: 'Help me debug any recent errors in the code' },
-  { emoji: '✨', label: 'Refactor code', prompt: 'Suggest refactoring improvements for the codebase' },
+  { emoji: '📖', labelKey: 'chat.action_explain', promptKey: 'chat.prompt_explain' },
+  { emoji: '🧪', labelKey: 'chat.action_test', promptKey: 'chat.prompt_test' },
+  { emoji: '🐛', labelKey: 'chat.action_debug', promptKey: 'chat.prompt_debug' },
+  { emoji: '✨', labelKey: 'chat.action_refactor', promptKey: 'chat.prompt_refactor' },
 ];
 
 export const ChatPanel: React.FC = () => {
@@ -25,6 +26,7 @@ export const ChatPanel: React.FC = () => {
   const setActiveSidebarTab = useStore((s) => s.setActiveSidebarTab);
   const setCurrentModel = useStore((s) => s.setCurrentModel);
   const availableModels = useStore((s) => s.availableModels);
+  const locale = useStore((s) => s.locale);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef('');
   const activeIdRef = useRef<string | null>(null);
@@ -119,11 +121,11 @@ export const ChatPanel: React.FC = () => {
   };
 
   const commands = [
-    { cmd: '/help', desc: 'Show help information' },
-    { cmd: '/model', desc: 'Change model' },
-    { cmd: '/compact', desc: 'Compact conversation' },
-    { cmd: '/diff', desc: 'Show recent diffs' },
-    { cmd: '/review', desc: 'Review code changes' },
+    { cmd: '/help', descKey: 'cmd.help' },
+    { cmd: '/model', descKey: 'cmd.model' },
+    { cmd: '/compact', descKey: 'cmd.compact' },
+    { cmd: '/diff', descKey: 'cmd.diff' },
+    { cmd: '/review', descKey: 'cmd.review' },
   ];
 
   const folderName = cwd ? cwd.split(/[\\/]/).pop() : '...';
@@ -136,18 +138,18 @@ export const ChatPanel: React.FC = () => {
           <div className="flex items-center justify-center h-full animate-fade-in">
             <div className="text-center space-y-6 max-w-md">
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-slate-100">Start working with your project</h2>
-                <p className="text-sm text-slate-500">Select a task or type a prompt to get started</p>
+                <h2 className="text-xl font-semibold text-slate-100">{t('chat.welcome_title', locale)}</h2>
+                <p className="text-sm text-slate-500">{t('chat.welcome_subtitle', locale)}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {quickActions.map((action) => (
                   <button
-                    key={action.label}
-                    onClick={() => doSend(action.prompt)}
+                    key={action.labelKey}
+                    onClick={() => doSend(t(action.promptKey, locale))}
                     className="bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/50 hover:bg-slate-800 rounded-xl p-4 text-left transition-all duration-150 cursor-pointer group"
                   >
                     <span className="text-lg">{action.emoji}</span>
-                    <p className="text-sm text-slate-300 mt-2 group-hover:text-slate-100 transition-colors">{action.label}</p>
+                    <p className="text-sm text-slate-300 mt-2 group-hover:text-slate-100 transition-colors">{t(action.labelKey, locale)}</p>
                   </button>
                 ))}
               </div>
@@ -196,7 +198,7 @@ export const ChatPanel: React.FC = () => {
                               onClick={() => navigator.clipboard.writeText(code)}
                               className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-2 py-1 rounded transition-opacity"
                             >
-                              Copy
+                              {t('chat.copy', locale)}
                             </button>
                           </div>
                         ) : (
@@ -234,7 +236,7 @@ export const ChatPanel: React.FC = () => {
             <div className="bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-slate-400">
                 <div className="w-16 h-1 rounded-full bg-gradient-to-r from-indigo-500 to-slate-700" style={{ animation: 'pulse-bar 1.5s ease-in-out infinite' }} />
-                <span>Copilot is thinking</span>
+                <span>{t('chat.thinking', locale)}</span>
               </div>
             </div>
           </div>
@@ -255,7 +257,7 @@ export const ChatPanel: React.FC = () => {
             onClick={() => setShowModelPicker(!showModelPicker)}
             className="hover:text-slate-300 transition-colors relative"
           >
-            Model: {currentModel}
+            {t('chat.model_label', locale)}: {currentModel}
           </button>
           {showModelPicker && (
             <div className="absolute bottom-20 left-16 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl py-1 z-50 min-w-[200px] max-h-64 overflow-y-auto animate-fade-in">
@@ -278,14 +280,14 @@ export const ChatPanel: React.FC = () => {
               onClick={() => setActiveSidebarTab('files')}
               className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
             >
-              @Files
+              {t('chat.files_btn', locale)}
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowCommands(!showCommands)}
                 className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
               >
-                /Commands
+                {t('chat.commands_btn', locale)}
               </button>
               {showCommands && (
                 <div className="absolute bottom-8 left-0 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl py-1 z-50 min-w-[180px] animate-fade-in">
@@ -296,7 +298,7 @@ export const ChatPanel: React.FC = () => {
                       className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors"
                     >
                       <span className="text-xs text-indigo-400 font-mono">{c.cmd}</span>
-                      <span className="text-xs text-slate-500 ml-2">{c.desc}</span>
+                      <span className="text-xs text-slate-500 ml-2">{t(c.descKey, locale)}</span>
                     </button>
                   ))}
                 </div>
@@ -308,7 +310,7 @@ export const ChatPanel: React.FC = () => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isThinking ? 'Waiting for response...' : 'Type a message... (Enter to send)'}
+            placeholder={isThinking ? t('chat.placeholder_waiting', locale) : t('chat.placeholder', locale)}
             className="flex-1 bg-slate-800 text-slate-100 rounded-xl px-4 py-2.5 resize-none outline-none border border-slate-600 focus:border-indigo-500 disabled:opacity-50 text-sm transition-colors placeholder-slate-500"
             rows={1}
             disabled={isThinking}

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Message, FileNode, OpenFile, Settings } from '../types';
+import type { Locale } from '../utils/i18n';
 
 interface AppState {
   authStatus: 'checking' | 'authenticated' | 'unauthenticated';
@@ -17,6 +18,7 @@ interface AppState {
   settings: Settings;
   sidebarExpanded: boolean;
   chatInput: string;
+  locale: Locale;
 
   setAuthStatus: (status: 'checking' | 'authenticated' | 'unauthenticated') => void;
   setCurrentView: (view: 'auth' | 'main') => void;
@@ -37,6 +39,7 @@ interface AppState {
   setSidebarExpanded: (expanded: boolean) => void;
   setChatInput: (text: string) => void;
   appendToChatInput: (text: string) => void;
+  setLocale: (locale: Locale) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -72,6 +75,7 @@ export const useStore = create<AppState>((set) => ({
   activeSidebarTab: 'chat',
   sidebarExpanded: false,
   chatInput: '',
+  locale: 'en',
   settings: {
     theme: 'dark',
     experimentalMode: false,
@@ -118,4 +122,5 @@ export const useStore = create<AppState>((set) => ({
   setChatInput: (text) => set({ chatInput: text }),
   appendToChatInput: (text) =>
     set((s) => ({ chatInput: s.chatInput + text })),
+  setLocale: (locale) => set({ locale }),
 }));

@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { FileNode } from '../types';
+import { t } from '../utils/i18n';
 
 const FileTreeNode: React.FC<{
   node: FileNode;
   depth: number;
   onSelect: (node: FileNode) => void;
   onMention: (node: FileNode) => void;
-}> = ({ node, depth, onSelect, onMention }) => {
+  addLabel: string;
+}> = ({ node, depth, onSelect, onMention, addLabel }) => {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<FileNode[]>([]);
 
@@ -48,14 +50,14 @@ const FileTreeNode: React.FC<{
             className="hidden group-hover:flex items-center text-[10px] text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-1.5 py-0.5 rounded-full transition-all"
             title="Add to prompt"
           >
-            @ Add
+            {addLabel}
           </button>
         )}
       </div>
       {expanded && (
         <div className="animate-fade-in">
           {children.map((child) => (
-            <FileTreeNode key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onMention={onMention} />
+            <FileTreeNode key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onMention={onMention} addLabel={addLabel} />
           ))}
         </div>
       )}
@@ -70,6 +72,7 @@ export const FileTree: React.FC = () => {
   const cwd = useStore((s) => s.cwd);
   const setCwd = useStore((s) => s.setCwd);
   const appendToChatInput = useStore((s) => s.appendToChatInput);
+  const locale = useStore((s) => s.locale);
 
   useEffect(() => {
     const loadRoot = async () => {
@@ -108,11 +111,11 @@ export const FileTree: React.FC = () => {
   return (
     <div className="py-2">
       <div className="px-3 py-2 flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Explorer</span>
+        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{t('files.title', locale)}</span>
         <button
           onClick={handleChangeFolder}
           className="text-slate-500 hover:text-slate-300 p-1 rounded hover:bg-slate-700/30 transition-all"
-          title="Change folder"
+          title={t('files.change_folder', locale)}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
             <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
@@ -129,7 +132,7 @@ export const FileTree: React.FC = () => {
         ))}
       </div>
       {files.map((node) => (
-        <FileTreeNode key={node.path} node={node} depth={0} onSelect={handleSelect} onMention={handleMention} />
+        <FileTreeNode key={node.path} node={node} depth={0} onSelect={handleSelect} onMention={handleMention} addLabel={t('files.add_to_prompt', locale)} />
       ))}
     </div>
   );

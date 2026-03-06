@@ -1,5 +1,7 @@
 import React from 'react';
 import { useStore } from '../store';
+import { t } from '../utils/i18n';
+import type { Locale } from '../utils/i18n';
 
 const ChatIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
@@ -33,9 +35,9 @@ const ExpandIcon = ({ expanded }: { expanded: boolean }) => (
 );
 
 const tabs = [
-  { id: 'chat' as const, icon: ChatIcon, label: 'Chat' },
-  { id: 'files' as const, icon: FilesIcon, label: 'Files' },
-  { id: 'settings' as const, icon: SettingsIcon, label: 'Settings' },
+  { id: 'chat' as const, icon: ChatIcon, labelKey: 'sidebar.chat' },
+  { id: 'files' as const, icon: FilesIcon, labelKey: 'sidebar.files' },
+  { id: 'settings' as const, icon: SettingsIcon, labelKey: 'sidebar.settings' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -44,6 +46,9 @@ export const Sidebar: React.FC = () => {
   const sidebarExpanded = useStore((s) => s.sidebarExpanded);
   const setSidebarExpanded = useStore((s) => s.setSidebarExpanded);
   const authStatus = useStore((s) => s.authStatus);
+  const locale = useStore((s) => s.locale);
+
+  const localeIndicator: Record<Locale, string> = { 'en': 'EN', 'zh-CN': '中', 'ja': '日', 'ko': '한' };
 
   return (
     <div
@@ -54,6 +59,7 @@ export const Sidebar: React.FC = () => {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSidebarTab === tab.id;
+          const label = t(tab.labelKey, locale);
           return (
             <button
               key={tab.id}
@@ -65,13 +71,13 @@ export const Sidebar: React.FC = () => {
                   : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-200'
               }`}
               onClick={() => setActiveSidebarTab(tab.id === activeSidebarTab ? 'chat' : tab.id)}
-              title={!sidebarExpanded ? tab.label : undefined}
+              title={!sidebarExpanded ? label : undefined}
             >
               {isActive && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r" />
               )}
               <Icon />
-              {sidebarExpanded && <span className="text-sm font-medium">{tab.label}</span>}
+              {sidebarExpanded && <span className="text-sm font-medium">{label}</span>}
             </button>
           );
         })}
@@ -85,7 +91,7 @@ export const Sidebar: React.FC = () => {
           {sidebarExpanded && (
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${authStatus === 'authenticated' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-              <span className="text-xs text-slate-400">{authStatus === 'authenticated' ? 'Connected' : 'Offline'}</span>
+              <span className="text-xs text-slate-400">{authStatus === 'authenticated' ? t('sidebar.connected', locale) : t('sidebar.offline', locale)}</span>
             </div>
           )}
         </div>
@@ -94,11 +100,21 @@ export const Sidebar: React.FC = () => {
           className={`flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-700/30 rounded-lg transition-all duration-150 ${
             sidebarExpanded ? 'w-full px-3 py-2' : 'w-10 h-10 mx-auto'
           }`}
-          title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={sidebarExpanded ? t('sidebar.collapse', locale) : t('sidebar.expand', locale)}
         >
           <ExpandIcon expanded={sidebarExpanded} />
-          {sidebarExpanded && <span className="text-xs ml-2">Collapse</span>}
+          {sidebarExpanded && <span className="text-xs ml-2">{t('sidebar.collapse', locale)}</span>}
         </button>
+        {!sidebarExpanded && (
+          <div className="flex items-center justify-center py-1">
+            <span className="text-[10px] font-bold text-slate-500">{localeIndicator[locale]}</span>
+          </div>
+        )}
+        {sidebarExpanded && (
+          <div className="flex items-center px-3 py-1">
+            <span className="text-[10px] font-bold text-slate-500">{localeIndicator[locale]}</span>
+          </div>
+        )}
       </div>
     </div>
   );

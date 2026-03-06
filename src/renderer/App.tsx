@@ -7,6 +7,7 @@ import { StatusBar } from './components/StatusBar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { LoginPage } from './components/LoginPage';
 import { useStore } from './store';
+import { t } from './utils/i18n';
 
 const App: React.FC = () => {
   const authStatus = useStore((s) => s.authStatus);
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const activeSidebarTab = useStore((s) => s.activeSidebarTab);
   const rightSidebarOpen = useStore((s) => s.rightSidebarOpen);
   const sidebarExpanded = useStore((s) => s.sidebarExpanded);
+  const locale = useStore((s) => s.locale);
 
   useEffect(() => {
     const init = async () => {
@@ -54,7 +56,7 @@ const App: React.FC = () => {
           <svg className="w-12 h-12 mx-auto text-indigo-500 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
-          <p className="text-slate-400 text-sm">Checking authentication...</p>
+          <p className="text-slate-400 text-sm">{t('app.checking_auth', locale)}</p>
         </div>
       </div>
     );

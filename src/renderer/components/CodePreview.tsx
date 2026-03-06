@@ -2,6 +2,7 @@ import React from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from '../store';
+import { t } from '../utils/i18n';
 
 export const CodePreview: React.FC = () => {
   const openFiles = useStore((s) => s.openFiles);
@@ -9,6 +10,7 @@ export const CodePreview: React.FC = () => {
   const closeFile = useStore((s) => s.closeFile);
   const setActiveFile = useStore((s) => s.setActiveFile);
   const setRightSidebarOpen = useStore((s) => s.setRightSidebarOpen);
+  const locale = useStore((s) => s.locale);
 
   const activeFile = openFiles.find((f) => f.path === activeFilePath);
   const pathParts = activeFilePath ? activeFilePath.split(/[\\/]/).slice(-3) : [];
@@ -16,7 +18,7 @@ export const CodePreview: React.FC = () => {
   if (openFiles.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-        No files open
+        {t('preview.no_file', locale)}
       </div>
     );
   }
