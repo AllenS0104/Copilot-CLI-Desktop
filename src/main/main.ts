@@ -313,7 +313,10 @@ ipcMain.handle('copilot:getModels', () => {
 
 ipcMain.handle('pty:create', (_event, args: { cols: number; rows: number; cwd?: string }) => {
   const id = `pty-${Date.now()}`;
-  const ptyProcess = pty.spawn(copilotCmd, [], {
+  // On Windows, spawn cmd.exe and run copilot through it (node-pty can't resolve .cmd files directly)
+  const shell = process.platform === 'win32' ? 'cmd.exe' : '/bin/bash';
+  const shellArgs = process.platform === 'win32' ? ['/c', 'copilot'] : ['-c', 'copilot'];
+  const ptyProcess = pty.spawn(shell, shellArgs, {
     name: 'xterm-color',
     cols: args.cols || 80,
     rows: args.rows || 24,
