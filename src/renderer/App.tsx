@@ -7,6 +7,7 @@ import { StatusBar } from './components/StatusBar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { LoginPage } from './components/LoginPage';
 import { InstallPage } from './components/InstallPage';
+import { AuthChoicePage } from './components/AuthChoicePage';
 import { Header } from './components/Header';
 import { HistoryPanel } from './components/HistoryPanel';
 import { useStore } from './store';
@@ -47,20 +48,9 @@ const App: React.FC = () => {
         return;
       }
 
-      // Step 2: Check auth
-      try {
-        const result = await window.electronAPI.copilot.checkAuth();
-        if (result.authenticated) {
-          setAuthStatus('authenticated');
-          setCurrentView('main');
-        } else {
-          setAuthStatus('unauthenticated');
-          setCurrentView('auth');
-        }
-      } catch {
-        setAuthStatus('unauthenticated');
-        setCurrentView('auth');
-      }
+      // Step 2: Go to auth choice screen (no auto-check)
+      setAuthStatus('unauthenticated');
+      setCurrentView('auth_choice');
 
       // Step 3: Load cwd and models
       try {
@@ -90,6 +80,10 @@ const App: React.FC = () => {
 
   if (currentView === 'cli_install') {
     return <InstallPage />;
+  }
+
+  if (currentView === 'auth_choice') {
+    return <AuthChoicePage />;
   }
 
   if (authStatus === 'checking') {

@@ -6,7 +6,7 @@ interface AppState {
   cliStatus: 'checking' | 'installed' | 'not_installed';
   cliPlatform: string;
   authStatus: 'checking' | 'authenticated' | 'unauthenticated';
-  currentView: 'cli_check' | 'cli_install' | 'auth' | 'main';
+  currentView: 'cli_check' | 'cli_install' | 'auth_choice' | 'auth' | 'main';
   messages: Message[];
   isThinking: boolean;
   cwd: string;
@@ -26,7 +26,7 @@ interface AppState {
   chatHistory: { id: string; title: string; timestamp: number }[];
 
   setAuthStatus: (status: 'checking' | 'authenticated' | 'unauthenticated') => void;
-  setCurrentView: (view: 'cli_check' | 'cli_install' | 'auth' | 'main') => void;
+  setCurrentView: (view: 'cli_check' | 'cli_install' | 'auth_choice' | 'auth' | 'main') => void;
   setCliStatus: (status: 'checking' | 'installed' | 'not_installed') => void;
   setCliPlatform: (platform: string) => void;
   addMessage: (msg: Message) => void;
