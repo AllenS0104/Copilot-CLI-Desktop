@@ -84,15 +84,17 @@ ipcMain.handle(
   'copilot:prompt',
   (_event, args: { prompt: string; cwd: string; model?: string }) => {
     const id = `prompt-${Date.now()}`;
-    const spawnArgs = ['-sp', args.prompt];
+    const spawnArgs = ['-s', '-p', args.prompt];
     if (args.model) {
       spawnArgs.push('--model', args.model);
     }
 
+    // On Windows with shell:true, we must quote the prompt to prevent arg splitting
     const child = spawn(copilotCmd, spawnArgs, {
       cwd: args.cwd,
       env: process.env as Record<string, string>,
       shell: process.platform === 'win32',
+      windowsVerbatimArguments: false,
     });
 
     promptProcesses.set(id, child);
@@ -221,7 +223,7 @@ ipcMain.handle('copilot:install', async () => {
 ipcMain.handle('copilot:checkAuth', async () => {
   return new Promise<{ authenticated: boolean; message: string }>((resolve) => {
     let output = '';
-    const child = spawn(copilotCmd, ['-sp', 'hello'], {
+    const child = spawn(copilotCmd, ['-s', '-p', 'hello'], {
       env: process.env as Record<string, string>,
       shell: process.platform === 'win32',
     });
