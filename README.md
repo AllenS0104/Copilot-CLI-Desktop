@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version" />
+  <img src="https://img.shields.io/badge/version-0.1.1-blue" alt="version" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green" alt="platform" />
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license" />
   <img src="https://img.shields.io/badge/electron-28-purple" alt="electron" />
@@ -26,14 +26,16 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 
 - 🤖 **AI Chat** — Stream responses with Markdown rendering & syntax highlighting
 - 🔐 **Auto/Manual Auth** — GitHub device code flow with guided steps
-- 📁 **File Explorer** — Browse files, @ mention in prompts
+- 📁 **File Explorer** — Browse files, @ mention in prompts with file picker
 - 🧠 **17 AI Models** — Claude, GPT, Gemini — switch with one click
 - 🌍 **Multi-language** — English, 中文, 日本語, 한국어
-- 📂 **Project Management** — Add/switch projects, auto-sync working directory
+- 📂 **Project Management** — Add/switch projects, full read/write filesystem access
 - 💬 **Conversation History** — Browse and restore past sessions
 - ⚡ **Quick Actions** — Explain, Test, Debug, Refactor cards
 - 🔧 **Slash Commands** — /help, /model, /compact, /diff, /review
 - 🚀 **Auto CLI Install** — Detects missing CLI and guides installation
+- ⏹️ **Stop Generation** — Cancel AI responses mid-stream
+- 📋 **Copy & Paste** — Full clipboard support in chat input
 
 ---
 
@@ -43,14 +45,14 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 
 | File | Type | Description |
 |------|------|-------------|
-| `CopilotDesktop-Setup-0.1.0.exe` | **NSIS Installer** | Standard installer with desktop & start menu shortcuts |
-| `CopilotDesktop-Portable-0.1.0.exe` | **Portable (Beta)** | No installation needed, run directly |
+| `Copilot-CLI-Desktop-Setup-0.1.0.exe` | **NSIS Installer** | Standard installer with desktop & start menu shortcuts |
+| `Copilot-CLI-Desktop-Portable-0.1.0.exe` | **Portable (Beta)** | No installation needed, run directly |
 
 ### Linux
 
 | File | Type | Description |
 |------|------|-------------|
-| `CopilotDesktop-0.1.0-linux-x64.tar.gz` | **tar.gz** | Extract and run `./copilot-desktop` |
+| `Copilot-CLI-Desktop-0.1.0-linux-x64.tar.gz` | **tar.gz** | Extract and run `./copilot-desktop` |
 
 > **Note:** MSI installer and `.deb`/`.AppImage` packages require elevated build permissions. They will be available in future releases.
 
@@ -66,17 +68,17 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 ### Install & Run
 
 **Windows (Installer):**
-1. Download `CopilotDesktop-Setup-0.1.0.exe`
+1. Download `Copilot-CLI-Desktop-Setup-0.1.0.exe`
 2. Run the installer → choose install directory
 3. Launch from desktop shortcut or start menu
 
 **Windows (Portable):**
-1. Download `CopilotDesktop-Portable-0.1.0.exe`
+1. Download `Copilot-CLI-Desktop-Portable-0.1.0.exe`
 2. Double-click to run — no installation needed
 
 **Linux:**
 ```bash
-tar -xzf CopilotDesktop-0.1.0-linux-x64.tar.gz
+tar -xzf Copilot-CLI-Desktop-0.1.0-linux-x64.tar.gz
 cd copilot-desktop
 ./copilot-desktop
 ```
@@ -205,6 +207,7 @@ GPT:     5.3-codex · 5.2-codex · 5.2 · 5.1-codex-max · 5.1-codex · 5.1 · 5
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| v0.1.1 | 2026-03-08 | 🐛 Bug fixes: Stop button, copy/paste, @File picker, @Context menu, full FS access |
 | v0.1.0 | 2026-03-06 | 🎉 First public release |
 | — | 2026-03-06 | CLI auto-detection & installation |
 | — | 2026-03-06 | Auth choice (Auto/Manual) with terminal flow |
