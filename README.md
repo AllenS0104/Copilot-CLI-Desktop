@@ -1,4 +1,4 @@
-# Copilot Desktop
+# Copilot CLI Desktop
 
 <p align="center">
   <img src="assets/icon.png" width="128" alt="Copilot Desktop" />
@@ -18,7 +18,7 @@
 
 ---
 
-## ✨ What is Copilot Desktop?
+## ✨ What is Copilot CLI Desktop?
 
 Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/cli/) in a modern Electron desktop app with a graphical interface. It's built for users who prefer a visual UI over the command line.
 
@@ -223,6 +223,6 @@ MIT
 ---
 
 <p align="center">
-  Built with ❤️ by the Copilot Desktop Team<br/>
+  Built with ❤️ by Allen Song & the Copilot Desktop Team<br/>
   Powered by <a href="https://github.com/features/copilot/cli/">GitHub Copilot CLI</a>
 </p>

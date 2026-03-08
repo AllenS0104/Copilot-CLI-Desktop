@@ -9,6 +9,7 @@ interface AppState {
   currentView: 'cli_check' | 'cli_install' | 'auth_choice' | 'auth' | 'main';
   messages: Message[];
   isThinking: boolean;
+  activePromptId: string | null;
   cwd: string;
   currentModel: string;
   availableModels: string[];
@@ -33,6 +34,7 @@ interface AppState {
   updateLastMessage: (content: string) => void;
   clearMessages: () => void;
   setIsThinking: (thinking: boolean) => void;
+  setActivePromptId: (id: string | null) => void;
   setCwd: (cwd: string) => void;
   setCurrentModel: (model: string) => void;
   setAvailableModels: (models: string[]) => void;
@@ -59,6 +61,7 @@ export const useStore = create<AppState>((set) => ({
   currentView: 'cli_check' as const,
   messages: [],
   isThinking: false,
+  activePromptId: null,
   cwd: '',
   currentModel: 'claude-sonnet-4.6',
   availableModels: [
@@ -113,6 +116,7 @@ export const useStore = create<AppState>((set) => ({
     }),
   clearMessages: () => set({ messages: [] }),
   setIsThinking: (thinking) => set({ isThinking: thinking }),
+  setActivePromptId: (id) => set({ activePromptId: id }),
   setCwd: (cwd) => set({ cwd }),
   setCurrentModel: (model) => set({ currentModel: model }),
   setAvailableModels: (models) => set({ availableModels: models }),

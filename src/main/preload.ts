@@ -60,6 +60,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fs: {
     readdir: (dirPath: string) => ipcRenderer.invoke('fs:readdir', dirPath),
     readfile: (filePath: string) => ipcRenderer.invoke('fs:readfile', filePath),
+    writefile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writefile', filePath, content),
+    mkdir: (dirPath: string) => ipcRenderer.invoke('fs:mkdir', dirPath),
+    delete: (targetPath: string) => ipcRenderer.invoke('fs:delete', targetPath),
+    rename: (oldPath: string, newPath: string) => ipcRenderer.invoke('fs:rename', oldPath, newPath),
   },
   app: {
     getCwd: () => ipcRenderer.invoke('app:getCwd'),

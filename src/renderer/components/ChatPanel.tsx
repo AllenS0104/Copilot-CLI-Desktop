@@ -34,6 +34,8 @@ export const ChatPanel: React.FC = () => {
   const [showCommands, setShowCommands] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
 
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -106,7 +108,9 @@ export const ChatPanel: React.FC = () => {
     streamBufferRef.current = '';
     activeIdRef.current = null;
 
-    window.electronAPI?.copilot.prompt({ prompt: trimmed, cwd, model: currentModel });
+    window.electronAPI?.copilot.prompt({ prompt: trimmed, cwd, model: currentModel }).then((id: string) => {
+      useStore.getState().setActivePromptId(id);
+    });
   }, [isThinking, cwd, currentModel, addMessage, setIsThinking, setChatInput]);
 
   const handleSend = useCallback(() => {
@@ -119,6 +123,17 @@ export const ChatPanel: React.FC = () => {
       handleSend();
     }
   };
+
+  const handleCancel = useCallback(() => {
+    const promptId = useStore.getState().activePromptId;
+    if (promptId) {
+      window.electronAPI?.copilot.cancel({ id: promptId });
+    }
+    setIsThinking(false);
+    useStore.getState().setActivePromptId(null);
+    activeIdRef.current = null;
+    streamBufferRef.current = '';
+  }, [setIsThinking]);
 
   const commands = [
     { cmd: '/help', descKey: 'cmd.help' },
@@ -228,16 +243,23 @@ export const ChatPanel: React.FC = () => {
             )}
           </div>
         ))}
-        {isThinking && !activeIdRef.current && (
+        {isThinking && (
           <div className="flex gap-3 items-center animate-fade-in">
             <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-medium text-slate-300">
               C
             </div>
-            <div className="bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-3">
+            <div className="bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-slate-400">
                 <div className="w-16 h-1 rounded-full bg-gradient-to-r from-indigo-500 to-slate-700" style={{ animation: 'pulse-bar 1.5s ease-in-out infinite' }} />
                 <span>{t('chat.thinking', locale)}</span>
               </div>
+              <button
+                onClick={handleCancel}
+                className="text-xs bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 px-2.5 py-1 rounded-lg transition-all border border-red-600/30"
+                title={t('chat.stop', locale)}
+              >
+                ■ {t('chat.stop', locale)}
+              </button>
             </div>
           </div>
         )}
@@ -276,27 +298,101 @@ export const ChatPanel: React.FC = () => {
         {/* Input row */}
         <div className="p-3 flex items-end gap-2">
           <div className="flex gap-1">
-            <button
-              onClick={() => setActiveSidebarTab('files')}
-              className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
-            >
-              {t('chat.files_btn', locale)}
-            </button>
-            <button
-              onClick={() => {
-                const projectName = cwd ? cwd.split(/[\\/]/).pop() : '';
-                const activeFile = useStore.getState().activeFilePath || '';
-                const context = [projectName, activeFile].filter(Boolean).join(' ');
-                if (context) setChatInput(chatInput + '@' + context + ' ');
-                textareaRef.current?.focus();
-              }}
-              className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
-            >
-              {t('chat.context_btn', locale)}
-            </button>
             <div className="relative">
               <button
-                onClick={() => setShowCommands(!showCommands)}
+                onClick={() => { setShowFilePicker(!showFilePicker); setShowContextMenu(false); setShowCommands(false); }}
+                className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
+              >
+                {t('chat.files_btn', locale)}
+              </button>
+              {showFilePicker && (
+                <div className="absolute bottom-8 left-0 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl py-1 z-50 min-w-[260px] max-h-64 overflow-y-auto animate-fade-in">
+                  <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wider">{t('chat.pick_file', locale)}</div>
+                  {useStore.getState().openFiles.length > 0 ? (
+                    useStore.getState().openFiles.map((f) => (
+                      <button
+                        key={f.path}
+                        onClick={() => {
+                          setChatInput(chatInput + `@${f.path} `);
+                          setShowFilePicker(false);
+                          textareaRef.current?.focus();
+                        }}
+                        className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                      >
+                        <span className="text-xs text-indigo-400 font-mono">{f.path.split(/[\\/]/).pop()}</span>
+                        <span className="text-[10px] text-slate-500 ml-2 truncate">{f.path}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-slate-500">{t('chat.no_open_files', locale)}</div>
+                  )}
+                  <div className="border-t border-slate-700/50 mt-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setActiveSidebarTab('files');
+                        setShowFilePicker(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors text-xs text-slate-400"
+                    >
+                      📂 {t('chat.browse_files', locale)}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => { setShowContextMenu(!showContextMenu); setShowFilePicker(false); setShowCommands(false); }}
+                className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
+              >
+                {t('chat.context_btn', locale)}
+              </button>
+              {showContextMenu && (
+                <div className="absolute bottom-8 left-0 bg-slate-800 border border-slate-700/50 rounded-xl shadow-xl py-1 z-50 min-w-[220px] animate-fade-in">
+                  <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wider">{t('chat.add_context', locale)}</div>
+                  {cwd && (
+                    <button
+                      onClick={() => {
+                        setChatInput(chatInput + `@project:${cwd.split(/[\\/]/).pop()} `);
+                        setShowContextMenu(false);
+                        textareaRef.current?.focus();
+                      }}
+                      className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                    >
+                      <span className="text-xs text-indigo-400">📁 {t('chat.ctx_project', locale)}</span>
+                      <span className="text-[10px] text-slate-500 ml-2">{cwd.split(/[\\/]/).pop()}</span>
+                    </button>
+                  )}
+                  {useStore.getState().activeFilePath && (
+                    <button
+                      onClick={() => {
+                        const fp = useStore.getState().activeFilePath!;
+                        setChatInput(chatInput + `@file:${fp.split(/[\\/]/).pop()} `);
+                        setShowContextMenu(false);
+                        textareaRef.current?.focus();
+                      }}
+                      className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                    >
+                      <span className="text-xs text-indigo-400">📄 {t('chat.ctx_active_file', locale)}</span>
+                      <span className="text-[10px] text-slate-500 ml-2">{useStore.getState().activeFilePath?.split(/[\\/]/).pop()}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setChatInput(chatInput + '@selection ');
+                      setShowContextMenu(false);
+                      textareaRef.current?.focus();
+                    }}
+                    className="block w-full text-left px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                  >
+                    <span className="text-xs text-indigo-400">✂️ {t('chat.ctx_selection', locale)}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => { setShowCommands(!showCommands); setShowFilePicker(false); setShowContextMenu(false); }}
                 className="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 px-2 py-1.5 rounded-lg transition-all"
               >
                 {t('chat.commands_btn', locale)}
@@ -322,20 +418,47 @@ export const ChatPanel: React.FC = () => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={(e) => {
+              // Explicitly handle paste for Electron compatibility
+              const pasted = e.clipboardData.getData('text');
+              if (pasted) {
+                e.preventDefault();
+                const ta = textareaRef.current!;
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const newVal = chatInput.substring(0, start) + pasted + chatInput.substring(end);
+                setChatInput(newVal);
+                // Restore cursor position after React re-render
+                setTimeout(() => {
+                  ta.selectionStart = ta.selectionEnd = start + pasted.length;
+                }, 0);
+              }
+            }}
             placeholder={isThinking ? t('chat.placeholder_waiting', locale) : t('chat.placeholder', locale)}
             className="flex-1 bg-slate-800 text-slate-100 rounded-xl px-4 py-2.5 resize-none outline-none border border-slate-600 focus:border-indigo-500 disabled:opacity-50 text-sm transition-colors placeholder-slate-500"
             rows={1}
-            disabled={isThinking}
           />
-          <button
-            onClick={handleSend}
-            disabled={isThinking || !chatInput.trim()}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2.5 rounded-xl transition-all self-end"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-            </svg>
-          </button>
+          {isThinking ? (
+            <button
+              onClick={handleCancel}
+              className="bg-red-600 hover:bg-red-500 text-white p-2.5 rounded-xl transition-all self-end"
+              title={t('chat.stop', locale)}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!chatInput.trim()}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2.5 rounded-xl transition-all self-end"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>

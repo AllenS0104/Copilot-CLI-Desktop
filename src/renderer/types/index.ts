@@ -67,6 +67,10 @@ export interface ElectronAPI {
   fs: {
     readdir: (dirPath: string) => Promise<FileNode[]>;
     readfile: (filePath: string) => Promise<string | null>;
+    writefile: (filePath: string, content: string) => Promise<{ success: boolean; message?: string }>;
+    mkdir: (dirPath: string) => Promise<{ success: boolean; message?: string }>;
+    delete: (targetPath: string) => Promise<{ success: boolean; message?: string }>;
+    rename: (oldPath: string, newPath: string) => Promise<{ success: boolean; message?: string }>;
   };
   app: {
     getCwd: () => Promise<string>;

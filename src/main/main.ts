@@ -378,6 +378,47 @@ ipcMain.handle('fs:readfile', async (_event, filePath: string) => {
   }
 });
 
+ipcMain.handle('fs:writefile', async (_event, filePath: string, content: string) => {
+  try {
+    await fs.promises.writeFile(filePath, content, 'utf-8');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+});
+
+ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
+  try {
+    await fs.promises.mkdir(dirPath, { recursive: true });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+});
+
+ipcMain.handle('fs:delete', async (_event, targetPath: string) => {
+  try {
+    const stat = await fs.promises.stat(targetPath);
+    if (stat.isDirectory()) {
+      await fs.promises.rm(targetPath, { recursive: true, force: true });
+    } else {
+      await fs.promises.unlink(targetPath);
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+});
+
+ipcMain.handle('fs:rename', async (_event, oldPath: string, newPath: string) => {
+  try {
+    await fs.promises.rename(oldPath, newPath);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+});
+
 // ── App handlers ──
 
 ipcMain.handle('app:getCwd', () => {
