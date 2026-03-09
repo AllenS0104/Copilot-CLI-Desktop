@@ -10,11 +10,19 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.1-blue" alt="version" />
+  <img src="https://img.shields.io/badge/version-0.1.2-blue" alt="version" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green" alt="platform" />
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="license" />
   <img src="https://img.shields.io/badge/electron-28-purple" alt="electron" />
 </p>
+
+---
+
+## ⚠️ Upgrade Notice (v0.1.2)
+
+> **If you have a previous version (v0.1.0 or v0.1.1) installed, please uninstall it first before installing v0.1.2.**
+>
+> This version includes critical fixes and adds **auto-update** support. Once you install v0.1.2, all future updates will be delivered automatically — no more manual uninstall/reinstall.
 
 ---
 
@@ -25,6 +33,7 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 ### Key Features
 
 - 🤖 **AI Chat** — Stream responses with Markdown rendering & syntax highlighting
+- 🔄 **Auto Update** — App and CLI updates delivered automatically via GitHub Releases
 - 🔐 **Auto/Manual Auth** — GitHub device code flow with guided steps
 - 📁 **File Explorer** — Browse files, @ mention in prompts with file picker
 - 🧠 **17 AI Models** — Claude, GPT, Gemini — switch with one click
@@ -43,18 +52,18 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 
 ### Windows
 
-| File | Type | Description |
-|------|------|-------------|
-| `Copilot-CLI-Desktop-Setup-0.1.0.exe` | **NSIS Installer** | Standard installer with desktop & start menu shortcuts |
-| `Copilot-CLI-Desktop-Portable-0.1.0.exe` | **Portable (Beta)** | No installation needed, run directly |
+| File | Type | Size | Description |
+|------|------|------|-------------|
+| `Copilot-CLI-Desktop-Setup-0.1.2.exe` | **Installer** | ~81 MB | Standard installer with desktop & start menu shortcuts |
+| `Copilot-CLI-Desktop-Portable-0.1.2.exe` | **Portable** | ~81 MB | No installation needed, run directly |
 
 ### Linux
 
-| File | Type | Description |
-|------|------|-------------|
-| `Copilot-CLI-Desktop-0.1.0-linux-x64.tar.gz` | **tar.gz** | Extract and run `./copilot-desktop` |
+| File | Type | Size | Description |
+|------|------|------|-------------|
+| `Copilot-CLI-Desktop-0.1.2-linux-x64.tar.gz` | **tar.gz** | ~102 MB | Extract and run `./copilot-desktop` |
 
-> **Note:** MSI installer and `.deb`/`.AppImage` packages require elevated build permissions. They will be available in future releases.
+> Download from the [Releases](https://github.com/AllenS0104/Copilot-CLI-Desktop/releases) page.
 
 ---
 
@@ -68,17 +77,17 @@ Copilot Desktop wraps [GitHub Copilot CLI](https://github.com/features/copilot/c
 ### Install & Run
 
 **Windows (Installer):**
-1. Download `Copilot-CLI-Desktop-Setup-0.1.0.exe`
+1. Download `Copilot-CLI-Desktop-Setup-0.1.2.exe` from [Releases](https://github.com/AllenS0104/Copilot-CLI-Desktop/releases)
 2. Run the installer → choose install directory
 3. Launch from desktop shortcut or start menu
 
 **Windows (Portable):**
-1. Download `Copilot-CLI-Desktop-Portable-0.1.0.exe`
+1. Download `Copilot-CLI-Desktop-Portable-0.1.2.exe`
 2. Double-click to run — no installation needed
 
 **Linux:**
 ```bash
-tar -xzf Copilot-CLI-Desktop-0.1.0-linux-x64.tar.gz
+tar -xzf Copilot-CLI-Desktop-0.1.2-linux-x64.tar.gz
 cd copilot-desktop
 ./copilot-desktop
 ```
@@ -89,6 +98,12 @@ cd copilot-desktop
 2. **CLI Install** — If missing, guides you through installation (restart required after)
 3. **Auth Choice** — Select Auto (existing credentials) or Manual (terminal-based login)
 4. **Ready** — Start chatting with Copilot!
+
+### Auto Update
+
+Starting from v0.1.2, the app checks for updates automatically on launch:
+- **Desktop App** — Notifies you when a new version is available; download & restart from within the app
+- **Copilot CLI** — Check for CLI updates in Settings → About → "Check for Updates"
 
 ---
 
@@ -138,6 +153,7 @@ copilot-desktop/
 | **Bundler** | Webpack 5 | Module bundling |
 | **Terminal** | node-pty | Interactive CLI communication |
 | **Markdown** | react-markdown + react-syntax-highlighter | AI response rendering |
+| **Auto Update** | electron-updater | In-app update delivery |
 | **Packaging** | electron-builder | Cross-platform distribution |
 
 ### How It Works
@@ -191,6 +207,9 @@ npx electron-builder --win nsis portable
 
 # Package for Linux
 npx electron-builder --linux tar.gz
+
+# One-click release (build + package + push + publish)
+.\scripts\release.ps1 -Version "0.2.0"
 ```
 
 ### Supported AI Models (17)
@@ -207,6 +226,7 @@ GPT:     5.3-codex · 5.2-codex · 5.2 · 5.1-codex-max · 5.1-codex · 5.1 · 5
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| v0.1.2 | 2026-03-09 | 🔄 Auto-update (App + CLI), package size optimized (159MB→81MB), release script |
 | v0.1.1 | 2026-03-08 | 🐛 Bug fixes: Stop button, copy/paste, @File picker, @Context menu, full FS access |
 | v0.1.0 | 2026-03-06 | 🎉 First public release |
 | — | 2026-03-06 | CLI auto-detection & installation |
