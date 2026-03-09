@@ -17,7 +17,7 @@ interface AppState {
   openFiles: OpenFile[];
   activeFilePath: string | null;
   rightSidebarOpen: boolean;
-  activeSidebarTab: 'chat' | 'files' | 'settings' | 'history';
+  activeSidebarTab: 'chat' | 'vibe' | 'files' | 'settings' | 'history';
   settings: Settings;
   sidebarExpanded: boolean;
   chatInput: string;
@@ -43,7 +43,7 @@ interface AppState {
   closeFile: (path: string) => void;
   setActiveFile: (path: string | null) => void;
   setRightSidebarOpen: (open: boolean) => void;
-  setActiveSidebarTab: (tab: 'chat' | 'files' | 'settings' | 'history') => void;
+  setActiveSidebarTab: (tab: 'chat' | 'vibe' | 'files' | 'settings' | 'history') => void;
   setProjects: (projects: { name: string; path: string }[]) => void;
   setCurrentProject: (path: string | null) => void;
   addChatHistory: (entry: { id: string; title: string; timestamp: number }) => void;

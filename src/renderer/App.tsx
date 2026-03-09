@@ -9,6 +9,7 @@ import { LoginPage } from './components/LoginPage';
 import { InstallPage } from './components/InstallPage';
 import { AuthChoicePage } from './components/AuthChoicePage';
 import { UpdateNotification } from './components/UpdateNotification';
+import { VibeCodePanel } from './components/VibeCodePanel';
 import { Header } from './components/Header';
 import { HistoryPanel } from './components/HistoryPanel';
 import { useStore } from './store';
@@ -117,7 +118,14 @@ const App: React.FC = () => {
     }
   };
 
-  const showLeftPanel = activeSidebarTab !== 'chat';
+  const showLeftPanel = activeSidebarTab !== 'chat' && activeSidebarTab !== 'vibe';
+
+  const renderMainContent = () => {
+    if (activeSidebarTab === 'vibe') {
+      return <VibeCodePanel />;
+    }
+    return <ChatPanel />;
+  };
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-slate-100">
@@ -134,7 +142,7 @@ const App: React.FC = () => {
         )}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <ChatPanel />
+          {renderMainContent()}
         </div>
         {rightSidebarOpen && (
           <div className="w-96 border-l border-slate-700/50 overflow-hidden bg-slate-900 animate-fade-in">

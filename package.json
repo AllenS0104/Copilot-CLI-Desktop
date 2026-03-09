@@ -1,6 +1,6 @@
 {
   "name": "copilot-desktop",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Desktop UI wrapper for GitHub Copilot CLI",
   "author": {
     "name": "Copilot Desktop Team",

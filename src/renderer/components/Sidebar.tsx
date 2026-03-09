@@ -41,8 +41,16 @@ const ExpandIcon = ({ expanded }: { expanded: boolean }) => (
   </svg>
 );
 
+const VibeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+    <polyline points="4 17 10 11 4 5" />
+    <line x1="12" y1="19" x2="20" y2="19" />
+  </svg>
+);
+
 const topTabs = [
   { id: 'chat' as const, icon: ChatIcon, labelKey: 'sidebar.chat' },
+  { id: 'vibe' as const, icon: VibeIcon, labelKey: 'sidebar.vibe' },
   { id: 'files' as const, icon: FilesIcon, labelKey: 'sidebar.files' },
   { id: 'history' as const, icon: HistoryIcon, labelKey: 'sidebar.history' },
 ];
