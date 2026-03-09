@@ -24,6 +24,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('copilot:error', handler);
     },
     checkInstall: () => ipcRenderer.invoke('copilot:checkInstall') as Promise<{ installed: boolean; platform: string }>,
+    getVersion: () => ipcRenderer.invoke('copilot:getVersion') as Promise<{ version: string; raw: string }>,
+    update: () => ipcRenderer.invoke('copilot:update') as Promise<{ success: boolean; message: string }>,
+    onUpdateProgress: (callback: (data: { data: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload);
+      ipcRenderer.on('copilot:update-progress', handler);
+      return () => ipcRenderer.removeListener('copilot:update-progress', handler);
+    },
     install: () => ipcRenderer.invoke('copilot:install') as Promise<{ success: boolean; message: string }>,
     onInstallProgress: (callback: (data: { data: string }) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload);

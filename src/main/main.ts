@@ -135,6 +135,60 @@ ipcMain.handle('updater:install', () => {
   autoUpdater.quitAndInstall(false, true);
 });
 
+// ── Copilot CLI Version Check & Update ──
+
+ipcMain.handle('copilot:getVersion', async () => {
+  return new Promise<{ version: string; raw: string }>((resolve) => {
+    let output = '';
+    const child = spawn(copilotCmd, ['--version'], {
+      shell: process.platform === 'win32',
+      env: process.env as Record<string, string>,
+    });
+    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+    child.stderr?.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+    child.on('close', () => {
+      const match = output.match(/(\d+\.\d+\.\d+)/);
+      resolve({ version: match ? match[1] : 'unknown', raw: output.trim() });
+    });
+    child.on('error', () => {
+      resolve({ version: 'unknown', raw: 'Error checking version' });
+    });
+  });
+});
+
+ipcMain.handle('copilot:update', async () => {
+  return new Promise<{ success: boolean; message: string }>((resolve) => {
+    let output = '';
+    const child = spawn(copilotCmd, ['update'], {
+      shell: process.platform === 'win32',
+      env: process.env as Record<string, string>,
+    });
+    child.stdout?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+      mainWindow?.webContents.send('copilot:update-progress', { data: chunk.toString() });
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+      mainWindow?.webContents.send('copilot:update-progress', { data: chunk.toString() });
+    });
+    child.on('close', (code) => {
+      const hasUpdate = output.toLowerCase().includes('downloaded') || output.toLowerCase().includes('updated');
+      const alreadyLatest = output.toLowerCase().includes('already') || output.toLowerCase().includes('up to date');
+      if (code === 0) {
+        resolve({
+          success: true,
+          message: hasUpdate ? 'updated' : (alreadyLatest ? 'latest' : output.trim()),
+        });
+      } else {
+        resolve({ success: false, message: output.trim() || `Exit code ${code}` });
+      }
+    });
+    child.on('error', (err) => {
+      resolve({ success: false, message: err.message });
+    });
+  });
+});
+
 // ── Mode 1: Prompt API (chat) ──
 
 ipcMain.handle(

@@ -47,6 +47,9 @@ export interface ElectronAPI {
     cancel: (args: { id: string }) => Promise<void>;
     checkAuth: () => Promise<{ authenticated: boolean; message: string }>;
     checkInstall: () => Promise<{ installed: boolean; platform: string }>;
+    getVersion: () => Promise<{ version: string; raw: string }>;
+    update: () => Promise<{ success: boolean; message: string }>;
+    onUpdateProgress: (callback: (data: { data: string }) => void) => () => void;
     install: () => Promise<{ success: boolean; message: string; needsRestart?: boolean }>;
     onInstallProgress: (callback: (data: { data: string }) => void) => () => void;
     login: () => Promise<{ success: boolean; message: string }>;

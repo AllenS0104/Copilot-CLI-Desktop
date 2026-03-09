@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { ModelSelector } from './ModelSelector';
 import { t, LOCALES, LOCALE_LABELS } from '../utils/i18n';
@@ -11,6 +11,36 @@ export const SettingsPanel: React.FC = () => {
   const setCwd = useStore((s) => s.setCwd);
   const locale = useStore((s) => s.locale);
   const setLocale = useStore((s) => s.setLocale);
+  const [cliVersion, setCliVersion] = useState('...');
+  const [cliUpdating, setCliUpdating] = useState(false);
+  const [cliUpdateMsg, setCliUpdateMsg] = useState('');
+
+  useEffect(() => {
+    window.electronAPI?.copilot.getVersion().then((info) => {
+      setCliVersion(info.version);
+    });
+  }, []);
+
+  const handleCliUpdate = async () => {
+    setCliUpdating(true);
+    setCliUpdateMsg('');
+    const result = await window.electronAPI?.copilot.update();
+    setCliUpdating(false);
+    if (result?.success) {
+      if (result.message === 'updated') {
+        setCliUpdateMsg(t('settings.cli_updated', locale));
+        // Refresh version
+        const info = await window.electronAPI?.copilot.getVersion();
+        if (info) setCliVersion(info.version);
+      } else if (result.message === 'latest') {
+        setCliUpdateMsg(t('settings.cli_latest', locale));
+      } else {
+        setCliUpdateMsg(result.message);
+      }
+    } else {
+      setCliUpdateMsg(result?.message || 'Update failed');
+    }
+  };
 
   const handleChangeFolder = async () => {
     if (!window.electronAPI) return;
@@ -94,10 +124,30 @@ export const SettingsPanel: React.FC = () => {
 
       <section className="space-y-2">
         <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('settings.about', locale)}</h3>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-400 space-y-1">
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-400 space-y-2">
           <p className="text-slate-200 font-medium">Copilot Desktop</p>
           <p className="text-xs">{t('settings.version', locale)}</p>
           <p className="text-xs">{t('settings.built_with', locale)}</p>
+
+          <div className="border-t border-slate-700/50 my-2" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-300">Copilot CLI</p>
+              <p className="text-[10px] text-slate-500">v{cliVersion}</p>
+            </div>
+            <button
+              onClick={handleCliUpdate}
+              disabled={cliUpdating}
+              className="bg-indigo-600/20 hover:bg-indigo-600/40 disabled:opacity-50 text-indigo-400 text-xs px-3 py-1.5 rounded-lg transition-all border border-indigo-600/30"
+            >
+              {cliUpdating ? t('settings.cli_checking', locale) : t('settings.cli_update_btn', locale)}
+            </button>
+          </div>
+          {cliUpdateMsg && (
+            <p className="text-[11px] text-slate-400 animate-fade-in">{cliUpdateMsg}</p>
+          )}
+
           <p className="text-xs text-slate-500">© GitHub, Inc.</p>
         </div>
       </section>
