@@ -195,18 +195,25 @@ ipcMain.handle(
   'copilot:prompt',
   (_event, args: { prompt: string; cwd: string; model?: string }) => {
     const id = `prompt-${Date.now()}`;
-    const spawnArgs = ['-s', '-p', args.prompt];
-    if (args.model) {
-      spawnArgs.push('--model', args.model);
-    }
 
-    // On Windows with shell:true, we must quote the prompt to prevent arg splitting
-    const child = spawn(copilotCmd, spawnArgs, {
-      cwd: args.cwd,
-      env: process.env as Record<string, string>,
-      shell: process.platform === 'win32',
-      windowsVerbatimArguments: false,
-    });
+    let child: ChildProcess;
+    if (process.platform === 'win32') {
+      // Windows: spawn cmd.exe directly with quoted prompt to avoid arg splitting
+      const escaped = args.prompt.replace(/"/g, '\\"');
+      let cmd = `copilot -s -p "${escaped}"`;
+      if (args.model) cmd += ` --model ${args.model}`;
+      child = spawn('cmd.exe', ['/c', cmd], {
+        cwd: args.cwd,
+        env: process.env as Record<string, string>,
+      });
+    } else {
+      const spawnArgs = ['-s', '-p', args.prompt];
+      if (args.model) spawnArgs.push('--model', args.model);
+      child = spawn(copilotCmd, spawnArgs, {
+        cwd: args.cwd,
+        env: process.env as Record<string, string>,
+      });
+    }
 
     promptProcesses.set(id, child);
 
@@ -334,10 +341,16 @@ ipcMain.handle('copilot:install', async () => {
 ipcMain.handle('copilot:checkAuth', async () => {
   return new Promise<{ authenticated: boolean; message: string }>((resolve) => {
     let output = '';
-    const child = spawn(copilotCmd, ['-s', '-p', 'hello'], {
-      env: process.env as Record<string, string>,
-      shell: process.platform === 'win32',
-    });
+    let child: ChildProcess;
+    if (process.platform === 'win32') {
+      child = spawn('cmd.exe', ['/c', 'copilot -s -p "hello"'], {
+        env: process.env as Record<string, string>,
+      });
+    } else {
+      child = spawn(copilotCmd, ['-s', '-p', 'hello'], {
+        env: process.env as Record<string, string>,
+      });
+    }
 
     child.stdout?.on('data', (chunk: Buffer) => {
       output += chunk.toString();
