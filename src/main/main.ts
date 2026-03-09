@@ -198,11 +198,10 @@ ipcMain.handle(
 
     let child: ChildProcess;
     if (process.platform === 'win32') {
-      // Windows: spawn cmd.exe directly with quoted prompt to avoid arg splitting
-      const escaped = args.prompt.replace(/"/g, '\\"');
-      let cmd = `copilot -s -p "${escaped}"`;
-      if (args.model) cmd += ` --model ${args.model}`;
-      child = spawn('cmd.exe', ['/c', cmd], {
+      // Windows: pass args separately to cmd.exe /c — it joins them into one command line
+      const cmdArgs = ['/c', 'copilot', '-s', '-p', args.prompt];
+      if (args.model) cmdArgs.push('--model', args.model);
+      child = spawn('cmd.exe', cmdArgs, {
         cwd: args.cwd,
         env: process.env as Record<string, string>,
       });
@@ -343,7 +342,7 @@ ipcMain.handle('copilot:checkAuth', async () => {
     let output = '';
     let child: ChildProcess;
     if (process.platform === 'win32') {
-      child = spawn('cmd.exe', ['/c', 'copilot -s -p "hello"'], {
+      child = spawn('cmd.exe', ['/c', 'copilot', '-s', '-p', 'hello'], {
         env: process.env as Record<string, string>,
       });
     } else {
