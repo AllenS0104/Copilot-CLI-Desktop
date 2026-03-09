@@ -78,6 +78,16 @@ export interface ElectronAPI {
     selectFolder: () => Promise<string | null>;
     relaunch: () => Promise<void>;
   };
+  updater: {
+    check: () => Promise<{ available: boolean; version?: string; error?: string }>;
+    download: () => Promise<void>;
+    install: () => Promise<void>;
+    onAvailable: (cb: (data: { version: string; releaseNotes?: string }) => void) => () => void;
+    onNotAvailable: (cb: () => void) => () => void;
+    onProgress: (cb: (data: { percent: number; transferred: number; total: number }) => void) => () => void;
+    onDownloaded: (cb: () => void) => () => void;
+    onError: (cb: (data: { message: string }) => void) => () => void;
+  };
   menu: {
     onOpenProject: (cb: () => void) => () => void;
     onCloseProject: (cb: () => void) => () => void;

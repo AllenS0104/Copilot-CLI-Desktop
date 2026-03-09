@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as pty from 'node-pty';
 import { spawn, ChildProcess } from 'child_process';
+import { autoUpdater } from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null;
 const ptyProcesses = new Map<string, pty.IPty>();
@@ -64,7 +65,44 @@ function createWindow(): void {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  // Auto-update: check for updates after window is ready
+  if (process.env.NODE_ENV !== 'development') {
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => {
+      mainWindow?.webContents.send('updater:available', {
+        version: info.version,
+        releaseNotes: info.releaseNotes,
+      });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      mainWindow?.webContents.send('updater:not-available');
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+      mainWindow?.webContents.send('updater:progress', {
+        percent: Math.round(progress.percent),
+        transferred: progress.transferred,
+        total: progress.total,
+      });
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+      mainWindow?.webContents.send('updater:downloaded');
+    });
+
+    autoUpdater.on('error', (err) => {
+      mainWindow?.webContents.send('updater:error', { message: err.message });
+    });
+
+    // Check after 3 seconds to not block startup
+    setTimeout(() => autoUpdater.checkForUpdates(), 3000);
+  }
+});
 
 app.on('window-all-closed', () => {
   ptyProcesses.forEach((p) => p.kill());
@@ -76,6 +114,25 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (mainWindow === null) createWindow();
+});
+
+// ── Auto-Update IPC ──
+
+ipcMain.handle('updater:check', async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { available: !!result?.updateInfo, version: result?.updateInfo?.version };
+  } catch (err: any) {
+    return { available: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater:download', () => {
+  autoUpdater.downloadUpdate();
+});
+
+ipcMain.handle('updater:install', () => {
+  autoUpdater.quitAndInstall(false, true);
 });
 
 // ── Mode 1: Prompt API (chat) ──

@@ -71,6 +71,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
     selectFolder: () => ipcRenderer.invoke('app:selectFolder'),
     relaunch: () => ipcRenderer.invoke('app:relaunch'),
   },
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onAvailable: (cb: (data: { version: string; releaseNotes?: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: any) => cb(payload);
+      ipcRenderer.on('updater:available', handler);
+      return () => ipcRenderer.removeListener('updater:available', handler);
+    },
+    onNotAvailable: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('updater:not-available', handler);
+      return () => ipcRenderer.removeListener('updater:not-available', handler);
+    },
+    onProgress: (cb: (data: { percent: number; transferred: number; total: number }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: any) => cb(payload);
+      ipcRenderer.on('updater:progress', handler);
+      return () => ipcRenderer.removeListener('updater:progress', handler);
+    },
+    onDownloaded: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on('updater:downloaded', handler);
+      return () => ipcRenderer.removeListener('updater:downloaded', handler);
+    },
+    onError: (cb: (data: { message: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: any) => cb(payload);
+      ipcRenderer.on('updater:error', handler);
+      return () => ipcRenderer.removeListener('updater:error', handler);
+    },
+  },
   menu: {
     onOpenProject: (cb: () => void) => {
       const handler = () => cb();

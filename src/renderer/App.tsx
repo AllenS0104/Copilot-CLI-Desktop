@@ -8,6 +8,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { LoginPage } from './components/LoginPage';
 import { InstallPage } from './components/InstallPage';
 import { AuthChoicePage } from './components/AuthChoicePage';
+import { UpdateNotification } from './components/UpdateNotification';
 import { Header } from './components/Header';
 import { HistoryPanel } from './components/HistoryPanel';
 import { useStore } from './store';
@@ -120,6 +121,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-slate-100">
+      <UpdateNotification />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         {showLeftPanel && (

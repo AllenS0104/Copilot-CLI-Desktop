@@ -1,6 +1,6 @@
 {
   "name": "copilot-desktop",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Desktop UI wrapper for GitHub Copilot CLI",
   "author": {
     "name": "Copilot Desktop Team",
@@ -15,55 +15,80 @@
     "pack": "npm run build && electron-builder"
   },
   "dependencies": {
+    "diff2html": "^3.4.0",
+    "electron-updater": "^6.8.3",
+    "node-pty": "^1.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "node-pty": "^1.0.0",
-    "xterm": "^5.3.0",
-    "xterm-addon-fit": "^0.8.0",
-    "zustand": "^4.5.0",
     "react-markdown": "^9.0.0",
     "react-syntax-highlighter": "^15.5.0",
-    "diff2html": "^3.4.0"
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/react-syntax-highlighter": "^15.5.0",
-    "typescript": "^5.3.0",
-    "ts-node": "^10.9.0",
-    "ts-loader": "^9.5.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.0",
+    "asar": "^3.2.0",
     "autoprefixer": "^10.4.0",
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.0",
+    "css-loader": "^6.8.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0",
+    "html-webpack-plugin": "^5.6.0",
+    "postcss": "^8.4.0",
+    "postcss-loader": "^7.3.0",
+    "style-loader": "^3.3.0",
+    "tailwindcss": "^3.4.0",
+    "ts-loader": "^9.5.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.0",
-    "webpack-dev-server": "^4.15.0",
-    "html-webpack-plugin": "^5.6.0",
-    "css-loader": "^6.8.0",
-    "style-loader": "^3.3.0",
-    "postcss-loader": "^7.3.0",
-    "concurrently": "^8.2.0",
-    "cross-env": "^7.0.0"
+    "webpack-dev-server": "^4.15.0"
   },
   "build": {
     "appId": "com.github.copilot-desktop",
     "productName": "Copilot Desktop",
     "files": [
-      "dist/**/*",
-      "node_modules/**/*",
-      "package.json"
+      "dist/main/**/*",
+      "dist/renderer/**/*",
+      "package.json",
+      "node_modules/node-pty/**",
+      "node_modules/electron-updater/**",
+      "node_modules/builder-util-runtime/**",
+      "node_modules/lazy-val/**",
+      "node_modules/semver/**",
+      "node_modules/lodash.isequal/**",
+      "node_modules/lodash.escaperegexp/**",
+      "node_modules/js-yaml/**",
+      "node_modules/argparse/**",
+      "node_modules/tiny-typed-emitter/**",
+      "node_modules/fs-extra/**",
+      "node_modules/graceful-fs/**",
+      "node_modules/jsonfile/**",
+      "node_modules/universalify/**"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "AllenS0104",
+      "repo": "Copilot-CLI-Desktop"
+    },
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "signAndEditExecutable": false,
@@ -75,33 +100,42 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Copilot Desktop",
-      "artifactName": "CopilotDesktop-Setup-${version}.${ext}"
+      "allowElevation": true,
+      "artifactName": "Copilot-CLI-Desktop-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "CopilotDesktop-Portable-${version}.${ext}"
+      "artifactName": "Copilot-CLI-Desktop-Portable-${version}.${ext}"
     },
     "linux": {
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "rpm",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "tar.gz",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Development",
       "icon": "assets/icon.png",
-      "artifactName": "CopilotDesktop-${version}-linux-x64.${ext}"
+      "artifactName": "Copilot-CLI-Desktop-${version}-linux-x64.${ext}"
     }
   }
 }
